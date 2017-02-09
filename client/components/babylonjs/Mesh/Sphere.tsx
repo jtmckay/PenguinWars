@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as BABYLON from 'babylonjs';
+import applyGravity from '../../../functions/applyGravity';
 
 interface Props {
   scene: BABYLON.Scene;
@@ -9,6 +10,7 @@ interface Props {
   segments: number;
   diameter: number;
   mass: number;
+  animationRatio: number;
 }
 
 class Sphere extends React.Component<Props, {}> {
@@ -57,8 +59,9 @@ class Sphere extends React.Component<Props, {}> {
     //this.props.scene.beginAnimation(this.sphere, 0, 100, true);
 
     this.props.scene.registerBeforeRender(function () {
+      applyGravity(this.sphere, this.props.animationRatio);
       physicalSphere.angularVelocity.scaleEqual(.92);
-    });
+    }.bind(this));
   }
 
   componentWillUnmount() {

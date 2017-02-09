@@ -6,9 +6,11 @@ import Label from './Label';
 interface Props {
   showSettings: boolean;
   framerate: number;
+  animationRatio: number;
   changeSetting: (settingName: string, settingValue: any) => void;
   settings?: {
     movementSpeed: number;
+    jumpSpeed: number;
     mouseSensitivity: number;
     stickyRightMouseClick: boolean;
   };
@@ -22,6 +24,9 @@ class Settings extends React.Component<Props, {}> {
           <div>
             <h1 style={{textAlign: "center"}}>Settings</h1>
             <h3>FPS: {this.props.framerate}</h3>
+            <h3>Animation Ratio: {this.props.animationRatio}</h3>
+            <h3>Movement Speed: {this.props.settings.movementSpeed}</h3>
+            <h3>Jump Speed: {this.props.settings.jumpSpeed}</h3>
             <Label
               label={<span>Mouse Sensitivity</span>}
               control={<input type="text"

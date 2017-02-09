@@ -1,21 +1,26 @@
 import * as React from 'react';
 import * as BABYLON from 'babylonjs';
-import DegreesToRadians from './DegreesToRadians';
 import Light from './Light';
 import UniversalCamera from './UniversalCamera';
 import ArcRotateCamera from './ArcRotateCamera';
 import Ground from './Mesh/Ground';
+import Character from './Mesh/Character';
+import ParticleSystem from './Mesh/ParticleSystem';
 import Sphere from './Mesh/Sphere';
 import Model from './Mesh/Model';
 import Plane from './Mesh/Plane';
+import applyGravity from '../../functions/applyGravity';
 
 interface Props {
-  setFramerate: (fps: number) => void;
+  animationRatio: number;
   settings: {
     movementSpeed: number;
+    jumpSpeed: number;
     mouseSensitivity: number;
     stickyRightMouseClick: boolean;
   };
+  setFramerate: (fps: number) => void;
+  setAnimationRatio: (ratio: number) => void;
 }
 
 interface State {
@@ -41,20 +46,22 @@ class Canvas extends React.Component<Props, State> {
     this.mouseWheel = this.mouseWheel.bind(this);
   }
   WebGLSupported: boolean;
+  assetsLoaded: boolean;
   canvas: HTMLCanvasElement;
   engine: BABYLON.Engine;
-  car: BABYLON.Mesh;
-  ground: BABYLON.Mesh;
-  plane: BABYLON.Mesh;
+  assetsManager: BABYLON.AssetsManager;
   camera: BABYLON.ArcRotateCamera;
+  ground: BABYLON.Mesh;
+  particleSystem: BABYLON.ParticleSystem;
+  particleSystem2: BABYLON.ParticleSystem;
+  plane: BABYLON.Mesh;
+  car: BABYLON.Mesh;
   pointerLocked: boolean;
-  emitter: BABYLON.Mesh;
   hook: {
     Sphere?: BABYLON.Mesh
   } = {};
-
-  characterMesh: BABYLON.Mesh;
-  characterShell: BABYLON.Mesh;
+  character: BABYLON.Mesh;
+  skullMesh: BABYLON.Mesh;
 
   componentDidMount() {
     this.canvas = (document.getElementById("renderCanvas") as HTMLCanvasElement);
@@ -67,13 +74,10 @@ class Canvas extends React.Component<Props, State> {
       this.engine = new BABYLON.Engine(this.canvas, true);
 
       let scene = this.createScene();
-
-      this.createParticleSystem(scene, new BABYLON.Color4(.1, .2, .8, 1), new BABYLON.Color4(.2, .3, 1, 1));
-      this.createParticleSystem(scene, new BABYLON.Color4(.8, .2, .1, 1), new BABYLON.Color4(.1, .3, .2, 1))
-      this.loadSkull(scene);
-
-      BABYLON.SceneLoader.ImportMesh("test", "babylonjs/", "skull.babylon", scene, function (newMeshes) {
-        this.car = newMeshes[0];
+/*
+      let carTask = this.assetsManager.addMeshTask("car task", "test", "babylonjs/", "skull.babylon");
+      carTask.onSuccess = function(task: any) {
+        this.car = task.loadedMeshes[0];
         this.car.position = new BABYLON.Vector3(5, 0, 0);
         let car = this.car.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, {mass: 5, friction: 1});
 
@@ -81,7 +85,23 @@ class Canvas extends React.Component<Props, State> {
           car.angularVelocity.scaleEqual(.95);
           //car.linearVelocity.scaleEqual(.9);
         });
-      }.bind(this));
+      }.bind(this);
+*/
+      let addSkullTask = this.assetsManager.addMeshTask("add character", "test", "babylonjs/", "skull.babylon");
+      addSkullTask.onSuccess = function(task: any) {
+        this.skullMesh = task.loadedMeshes[0];
+
+        this.car = Object.assign({}, task.loadedMeshes[0]);
+        this.car.position = new BABYLON.Vector3(5, 0, 0);
+        this.car.ellipsoid = new BABYLON.Vector3(4, 4, 4);
+        let car = this.car.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, {mass: 10, friction: 1});
+
+        this.state.scene.registerBeforeRender(function () {
+          applyGravity(this.car, this.state.scene.getAnimationRatio());
+          car.angularVelocity.scaleEqual(.95);
+          //car.linearVelocity.scaleEqual(.9);
+        }.bind(this));
+      }.bind(this);
       /*
       BABYLON.SceneLoader.Load("babylonjs/", "originalcar.babylon", this.engine, function(newScene) {
         this.engine.runRenderLoop(function () {
@@ -105,6 +125,21 @@ class Canvas extends React.Component<Props, State> {
       window.addEventListener("resize", function () {
         this.engine.resize();
       }.bind(this));
+
+      this.assetsManager.onFinish = function (tasks) {
+        this.assetsLoaded = true;
+        console.log("Finish");
+        this.engine.hideLoadingUI();
+        this.engine.runRenderLoop(function () {
+          scene.render();
+        }.bind(this));
+      }.bind(this);
+      this.assetsManager.onTaskError = function (task) {
+        console.log("Error");
+        console.log(task);
+      };
+      this.engine.displayLoadingUI();
+      this.assetsManager.load();
     }
   }
 
@@ -119,167 +154,6 @@ class Canvas extends React.Component<Props, State> {
       this.pointerLocked = false;
       this.camera.detachControl(this.canvas);
     }
-  }
-
-  loadSkull (scene: BABYLON.Scene) {
-    BABYLON.SceneLoader.ImportMesh("test", "babylonjs/", "skull.babylon", scene, function (newMeshes) {
-      this.characterMesh = newMeshes[0];
-      this.characterMesh.scaling = new BABYLON.Vector3(.2, .2, .2);
-
-      this.characterShell = BABYLON.Mesh.CreateSphere("Character", 2, 11, scene, true);
-      this.characterShell.isVisible = false;
-      let shell = this.characterShell.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor,
-        {mass: 100, friction: 100, restitution: .001});
-      this.characterShell.position = this.characterMesh.position;
-
-      let w = false;
-      let a = false;
-      let s = false;
-      let d = false;
-      let space = false;
-      let control = false;
-      let shift = false;
-      let onGround = false;
-      let canJump = true;
-
-      scene.actionManager = new BABYLON.ActionManager(scene);
-
-      scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function (event) {
-        if (event.sourceEvent.keyCode == 87) {
-          w = true;
-        }
-        if (event.sourceEvent.keyCode == 65) {
-          a = true;
-        }
-        if (event.sourceEvent.keyCode == 83) {
-          s = true;
-        }
-        if (event.sourceEvent.keyCode == 68) {
-          d = true;
-        }
-        if (event.sourceEvent.keyCode == 32) {
-          space = true;
-        }
-        if (event.sourceEvent.keyCode == 17) {
-          control = true;
-        }
-        if (event.sourceEvent.keyCode == 16) {
-          shift = true;
-        }
-      }));
-
-      scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, function (event) {
-        if (event.sourceEvent.keyCode == 87) {
-          w = false;
-        }
-        if (event.sourceEvent.keyCode == 65) {
-          a = false;
-        }
-        if (event.sourceEvent.keyCode == 83) {
-          s = false;
-        }
-        if (event.sourceEvent.keyCode == 68) {
-          d = false;
-        }
-        if (event.sourceEvent.keyCode == 32) {
-          space = false;
-        }
-        if (event.sourceEvent.keyCode == 17) {
-          control = false;
-        }
-        if (event.sourceEvent.keyCode == 16) {
-          shift = false;
-        }
-      }));
-
-      let currentAnimationRatio = 1;
-      scene.registerBeforeRender(function () {
-        //shell.linearVelocity.scaleEqual(currentAnimationRatio/scene.getAnimationRatio());
-        //shell.angularVelocity.scaleEqual(currentAnimationRatio/scene.getAnimationRatio());
-        //shell.mass = shell.mass * (currentAnimationRatio/scene.getAnimationRatio());
-        currentAnimationRatio = scene.getAnimationRatio();
-        this.props.setFramerate(currentAnimationRatio);
-        //Stop rotation of the character in order to apply friction to stop the character without impulse
-        if (!w && !a && !s && !d) {
-          shell.angularVelocity.scaleEqual(0);
-        }
-        else {
-          shell.linearVelocity.scaleEqual(.99);
-          shell.angularVelocity.scaleEqual(.99);
-        }
-        //Adjust speed for framerate
-        let localSpeed = this.props.settings.movementSpeed;
-        //Y-axis point to calculate the angle of the camera
-        let vector1 = new BABYLON.Vector2(0, 1);
-        //Camera position relative to the object
-        let vector2 = new BABYLON.Vector2(this.characterMesh.position.x - this.camera.position.x,
-          this.characterMesh.position.z - this.camera.position.z);
-        let angle = BABYLON.Angle.BetweenTwoPoints(vector1, vector2);
-
-        //Calculation to determine if the character is on the ground
-        var pickInfo = this.ground.intersects(
-          new BABYLON.Ray(
-            new BABYLON.Vector3(shell.position.x, shell.position.y, shell.position.z),
-            new BABYLON.Vector3(0, 1, 0),
-            5.6
-          ));
-        if (pickInfo.hit) {
-          //If the ground is within .1 of the bottom of the character (sphere diameter of 11)
-          onGround = (shell.position.y - 5.5) < pickInfo.pickedPoint.y + .25 &&
-          (shell.position.y - 5.5) > pickInfo.pickedPoint.y - .25;
-        }
-        let current = shell.linearVelocity;
-
-        //Jump before modifying the localSpeed to compensate for shift and multiple directions
-        if (space && canJump && onGround) {
-          this.characterShell.applyImpulse(new BABYLON.Vector3(0, this.props.settings.movementSpeed, 0), this.characterMesh.position);
-          canJump = false;
-          setTimeout(function () {
-            canJump = true;
-          }, 150);
-        }
-
-        if ((w && !s || s && !w) &&
-        (d && !a || a && !d)) {
-          localSpeed = localSpeed * Math.cos(DegreesToRadians(45));
-        }
-
-        let target = new BABYLON.Vector3(0, 0, 0);
-
-        if (shift) {
-          localSpeed = localSpeed/20;
-        }
-        if (w) {
-          target.x += localSpeed * Math.sin(angle.radians() + DegreesToRadians(90));
-          target.z -= localSpeed * Math.cos(angle.radians() + DegreesToRadians(90));
-        }
-        if (a) {
-          target.x -= localSpeed * Math.sin(angle.radians());
-          target.z += localSpeed * Math.cos(angle.radians());
-        }
-        if (s) {
-          target.x += localSpeed * Math.sin(angle.radians() - DegreesToRadians(90));
-          target.z -= localSpeed * Math.cos(angle.radians() - DegreesToRadians(90));
-        }
-        if (d) {
-          target.x += localSpeed * Math.sin(angle.radians());
-          target.z -= localSpeed * Math.cos(angle.radians());
-        }
-        if (shift) {
-          this.characterShell.applyImpulse(target, this.characterMesh.position);
-        }
-        else {
-          if (target.x != 0 || target.z != 0) {
-            this.characterShell.applyImpulse(
-              new BABYLON.Vector3(target.x - current.x, 0, target.z - current.z),
-              this.characterMesh.position);
-          }
-        }
-        this.characterMesh.rotation = new BABYLON.Vector3(0, -this.camera.alpha + DegreesToRadians(90), 0);
-        //skull.rotation.x -= 1;
-        this.camera.target = this.characterMesh.position;
-      }.bind(this));
-    }.bind(this));
   }
 
   mouseDown(event) {
@@ -326,101 +200,34 @@ class Canvas extends React.Component<Props, State> {
     }
   }
 
-  createParticleSystem(scene: BABYLON.Scene,
-    color1: BABYLON.Color4,
-    color2: BABYLON.Color4) : BABYLON.ParticleSystem {
-    let emitter = BABYLON.Mesh.CreateBox("emitter", .1, scene);
-    emitter.position.y = -10;
-    emitter.position.z = 10;
-    emitter.isVisible = false;
-    this.emitter = emitter;
-
-    let particleSystem = new BABYLON.ParticleSystem("particles", 10000, scene);
-    particleSystem.emitter = emitter;
-    //texture
-    particleSystem.particleTexture = new BABYLON.Texture("textures/flare.png", scene);
-
-    //color range
-    particleSystem.color1 = color1;
-    particleSystem.color2 = color2;
-
-    //power
-    particleSystem.minAngularSpeed = -.5;
-    particleSystem.maxAngularSpeed = .5;
-
-    particleSystem.minSize = .1;
-    particleSystem.maxSize = .3;
-
-    particleSystem.minLifeTime = .5;
-    particleSystem.maxLifeTime = 1;
-
-    particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
-
-    particleSystem.minEmitBox = new BABYLON.Vector3(-5, 0, -5);
-    particleSystem.maxEmitBox = new BABYLON.Vector3(5, 0, 5);
-
-    particleSystem.direction1 = new BABYLON.Vector3(-.3, 1, -.3);
-    particleSystem.direction2 = new BABYLON.Vector3(.3, 1, .3);
-
-    //power
-    particleSystem.minEmitPower = 30;
-    particleSystem.maxEmitPower = 50;
-
-    //quantity
-    particleSystem.emitRate = 100000;
-
-    //gravity
-    particleSystem.gravity = new BABYLON.Vector3(0, -98.1, 0);
-
-    //start
-    particleSystem.start();
-
-    return particleSystem;
-  }
-
   createScene() {
     let scene = new BABYLON.Scene(this.engine);
+    this.assetsManager = new BABYLON.AssetsManager(scene);
     scene.collisionsEnabled = true;
-    scene.enablePhysics(new BABYLON.Vector3(0, -98.1, 0), new BABYLON.OimoJSPlugin() as any);
+    scene.enablePhysics(new BABYLON.Vector3(0, 0, 0), new BABYLON.OimoJSPlugin() as any);
     scene.fogMode = BABYLON.Scene.FOGMODE_EXP2;
-    scene.fogDensity = .003;
+    scene.fogDensity = .0003;
 
     //runs every frame
     scene.registerBeforeRender(function () {
+      this.props.setFramerate(this.engine.getFps(), this.engine.getDeltaTime());
+      this.props.setAnimationRatio(scene.getAnimationRatio());
       var pickResult = scene.pick(scene.pointerX, scene.pointerY, function (mesh) {
         return mesh.name == "ground";
       });
 
       if (pickResult.hit) {
-        this.emitter.position = pickResult.pickedPoint;
+        this.particleSystem.emitter.position = pickResult.pickedPoint;
         //this.car.position.x = pickResult.pickedPoint.x;
         //this.car.position.z = pickResult.pickedPoint.z;
       }
 
     }.bind(this));
-    /*
-    // Casting a ray to get height
-    var ray = new BABYLON.Ray(new BABYLON.Vector3(scene.pointerX, this.ground.getBoundingInfo().boundingBox.maximumWorld.y + 1, this.car.position.z),
-                                new BABYLON.Vector3(0, -1, 0)); // Direction
-    var worldInverse = new BABYLON.Matrix();
-    this.ground.getWorldMatrix().invertToRef(worldInverse);
-    ray = BABYLON.Ray.Transform(ray, worldInverse);
-    var pickInfo = this.ground.intersects(ray);
-    if (pickInfo.hit) {
-      //this.car.position.x = pickInfo.pickedPoint.x + 1.5;
-      //this.car.position.y = pickInfo.pickedPoint.y + 1;
-      //this.car.position.z = pickInfo.pickedPoint.z - 1;
-    }*/
-
-    this.engine.runRenderLoop(function () {
-      scene.render();
-    }.bind(this));
-
     return scene;
   }
 
   render() {
-    if (this.state.scene) {
+    if (this.state.scene && this.assetsLoaded) {
       return (
         <canvas id="renderCanvas" style={{width: "100vw", height: "100vh"}}
           onKeyDown={this.keyDown}
@@ -429,18 +236,38 @@ class Canvas extends React.Component<Props, State> {
           onWheel={this.mouseWheel}>
           <Light scene={this.state.scene} />
           <ArcRotateCamera
-          scene={this.state.scene}
-          register={(camera: BABYLON.ArcRotateCamera) => this.camera = camera}
-          canvas={this.canvas}
-          target={BABYLON.Vector3.Zero()}
-          mouseSensitivity={this.props.settings.mouseSensitivity} />
+            scene={this.state.scene}
+            register={(camera: BABYLON.ArcRotateCamera) => this.camera = camera}
+            canvas={this.canvas}
+            target={BABYLON.Vector3.Zero()}
+            mouseSensitivity={this.props.settings.mouseSensitivity} />
           <Ground scene={this.state.scene}
+            register={ground => this.ground = ground}
             material={(function() {
               let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
               material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
               return material;
-            }.bind(this))()}
-            register={ground => this.ground = ground} />
+            }.bind(this))()} />
+          <Character scene={this.state.scene}
+            register={character => this.character = character}
+            mesh={this.skullMesh}
+            camera={this.camera}
+            ground={this.ground}
+            animationRatio={this.props.animationRatio}
+            movementSpeed={this.props.settings.movementSpeed}
+            jumpSpeed={this.props.settings.jumpSpeed} />
+          <ParticleSystem scene={this.state.scene}
+            register={particleSystem => this.particleSystem = particleSystem}
+            position={new BABYLON.Vector3(0, -10, 0)}
+            color1={new BABYLON.Color4(.1, .2, .8, 1)}
+            color2={new BABYLON.Color4(.2, .3, 1, 1)}
+            texture={new BABYLON.Texture("textures/flare.png", this.state.scene)} />
+          <ParticleSystem scene={this.state.scene}
+            register={particleSystem => this.particleSystem2 = particleSystem}
+            position={new BABYLON.Vector3(0, -10, 0)}
+            color1={new BABYLON.Color4(.8, .2, .1, 1)}
+            color2={new BABYLON.Color4(1, .3, .2, 1)}
+            texture={new BABYLON.Texture("textures/flare.png", this.state.scene)} />
           <Plane scene={this.state.scene}
             register={plane => this.plane = plane}
             material={(function() {
@@ -448,8 +275,8 @@ class Canvas extends React.Component<Props, State> {
               material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
               return material;
             }.bind(this))()}
-            size={500}
-            position={new BABYLON.Vector3(0, 0, -250)}
+            size={1000}
+            position={new BABYLON.Vector3(0, 0, -500)}
             rotation={new BABYLON.Vector3(Math.PI, 0, 0)} />
           <Plane scene={this.state.scene}
             register={plane => this.plane = plane}
@@ -458,8 +285,8 @@ class Canvas extends React.Component<Props, State> {
               material.diffuseColor = new BABYLON.Color3(1, 0, 0);
               return material;
             }.bind(this))()}
-            size={500}
-            position={new BABYLON.Vector3(0, 0, 250)}
+            size={1000}
+            position={new BABYLON.Vector3(0, 0, 500)}
             rotation={new BABYLON.Vector3(0, 0, 0)} />
           <Plane scene={this.state.scene}
             register={plane => this.plane = plane}
@@ -468,8 +295,8 @@ class Canvas extends React.Component<Props, State> {
               material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
               return material;
             }.bind(this))()}
-            size={500}
-            position={new BABYLON.Vector3(-250, 0, 0)}
+            size={1000}
+            position={new BABYLON.Vector3(-500, 0, 0)}
             rotation={new BABYLON.Vector3(0, -Math.PI/2, 0)} />
           <Plane scene={this.state.scene}
             register={plane => this.plane = plane}
@@ -478,13 +305,14 @@ class Canvas extends React.Component<Props, State> {
               material.diffuseColor = new BABYLON.Color3(1, 0, 0);
               return material;
             }.bind(this))()}
-            size={500}
-            position={new BABYLON.Vector3(250, 0, 0)}
+            size={1000}
+            position={new BABYLON.Vector3(500, 0, 0)}
             rotation={new BABYLON.Vector3(0, Math.PI/2, 0)} />
           <Sphere scene={this.state.scene}
+            animationRatio={this.props.animationRatio}
             segments={20}
-            diameter={6}
-            mass={6}
+            diameter={60}
+            mass={60}
             material={(function() {
               let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
               material.emissiveTexture = new BABYLON.Texture("textures/penguin.png", this.state.scene);
@@ -492,10 +320,11 @@ class Canvas extends React.Component<Props, State> {
             }.bind(this))()}
             position={new BABYLON.Vector3(0, 0, 0)} />
           <Sphere scene={this.state.scene}
+            animationRatio={this.props.animationRatio}
             hook={object => this.hook.Sphere = object}
             segments={20}
-            diameter={7}
-            mass={7}
+            diameter={70}
+            mass={70}
             material={(function() {
               let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
               material.diffuseColor = new BABYLON.Color3(.5, 1, .5);
@@ -505,9 +334,10 @@ class Canvas extends React.Component<Props, State> {
             }.bind(this))()}
             position={this.state.position} />
           <Sphere scene={this.state.scene}
+            animationRatio={this.props.animationRatio}
             segments={20}
-            diameter={8}
-            mass={8}
+            diameter={80}
+            mass={80}
             material={(function() {
               let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
               material.diffuseColor = new BABYLON.Color3(1.0, 0.2, 0.7);

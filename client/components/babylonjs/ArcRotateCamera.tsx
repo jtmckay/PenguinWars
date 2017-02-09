@@ -25,8 +25,9 @@ class ArcRotateCamera extends React.Component<Props, {}> {
     this.camera.inertia = 0;
     this.camera.angularSensibilityX = 1500/this.mouseSensitivity;
     this.camera.angularSensibilityY = 1500/this.mouseSensitivity;
-    this.camera.lowerRadiusLimit = 5;
-    this.camera.upperRadiusLimit = 100;
+    this.camera.lowerRadiusLimit = 50;
+    this.camera.upperRadiusLimit = 1000;
+    this.camera.radius = 800;
     this.camera.lowerBetaLimit = .1;
     this.camera.upperBetaLimit = Math.PI/2;
 

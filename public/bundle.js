@@ -651,7 +651,7 @@
 
 /***/ },
 /* 6 */
-[247, 7],
+[250, 7],
 /* 7 */
 /***/ function(module, exports) {
 
@@ -6349,7 +6349,7 @@
 
 /***/ },
 /* 50 */
-[247, 35],
+[250, 35],
 /* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -25919,7 +25919,7 @@
 	const react_router_1 = __webpack_require__(178);
 	const LayoutPage_1 = __webpack_require__(234);
 	const HomePage_1 = __webpack_require__(235);
-	const OtherPage_1 = __webpack_require__(246);
+	const OtherPage_1 = __webpack_require__(249);
 	Object.defineProperty(exports, "__esModule", { value: true });
 	//* handles unkowns and the given level
 	exports.default = (React.createElement(react_router_1.Route, { path: "/", component: LayoutPage_1.default },
@@ -25953,18 +25953,22 @@
 	"use strict";
 	const React = __webpack_require__(1);
 	const Canvas_1 = __webpack_require__(236);
-	const Settings_1 = __webpack_require__(244);
+	const Settings_1 = __webpack_require__(247);
 	class HomePage extends React.Component {
 	    constructor(props) {
 	        super(props);
 	        this.state = {
 	            showSettings: false,
+	            animationRatio: 1,
 	            settings: {
-	                movementSpeed: 50,
+	                movementSpeed: 200,
+	                jumpSpeed: 400,
 	                mouseSensitivity: 5,
 	                stickyRightMouseClick: false
 	            }
 	        };
+	        this.animationRatios = [];
+	        this.averageAnimationRatio = 1;
 	        this.keyDown = this.keyDown.bind(this);
 	        this.changeSetting = this.changeSetting.bind(this);
 	    }
@@ -25980,8 +25984,23 @@
 	    }
 	    render() {
 	        return (React.createElement("div", { onKeyDown: this.keyDown },
-	            React.createElement(Settings_1.default, { framerate: this.state.framerate, settings: this.state.settings, changeSetting: this.changeSetting, showSettings: this.state.showSettings }),
-	            React.createElement(Canvas_1.default, { settings: this.state.settings, setFramerate: (fps) => this.setState({ framerate: fps }) })));
+	            React.createElement(Settings_1.default, { framerate: this.state.framerate, animationRatio: this.state.animationRatio, settings: this.state.settings, changeSetting: this.changeSetting, showSettings: this.state.showSettings }),
+	            React.createElement(Canvas_1.default, { settings: this.state.settings, animationRatio: this.state.animationRatio, setAnimationRatio: (ratio) => {
+	                    this.animationRatios.push(ratio);
+	                    if (this.animationRatios.length >= 100) {
+	                        this.averageAnimationRatio = this.animationRatios.reduce((a, b) => { return a + b; }) / this.animationRatios.length;
+	                        this.setState({ animationRatio: this.averageAnimationRatio });
+	                        this.animationRatios.length = 0;
+	                    }
+	                    else {
+	                        if (ratio < this.state.animationRatio && ratio > this.state.animationRatio + 1) {
+	                            this.setState({ animationRatio: ratio });
+	                        }
+	                        else {
+	                            this.setState({ animationRatio: this.averageAnimationRatio });
+	                        }
+	                    }
+	                }, setFramerate: (fps) => this.setState({ framerate: fps }) })));
 	    }
 	}
 	Object.defineProperty(exports, "__esModule", { value: true });
@@ -25995,12 +26014,14 @@
 	"use strict";
 	const React = __webpack_require__(1);
 	const BABYLON = __webpack_require__(237);
-	const DegreesToRadians_1 = __webpack_require__(238);
-	const Light_1 = __webpack_require__(239);
-	const ArcRotateCamera_1 = __webpack_require__(240);
-	const Ground_1 = __webpack_require__(241);
-	const Sphere_1 = __webpack_require__(242);
-	const Plane_1 = __webpack_require__(243);
+	const Light_1 = __webpack_require__(238);
+	const ArcRotateCamera_1 = __webpack_require__(239);
+	const Ground_1 = __webpack_require__(240);
+	const Character_1 = __webpack_require__(241);
+	const ParticleSystem_1 = __webpack_require__(244);
+	const Sphere_1 = __webpack_require__(245);
+	const Plane_1 = __webpack_require__(246);
+	const applyGravity_1 = __webpack_require__(243);
 	class Canvas extends React.Component {
 	    constructor(props) {
 	        super(props);
@@ -26025,18 +26046,32 @@
 	        if (this.WebGLSupported) {
 	            this.engine = new BABYLON.Engine(this.canvas, true);
 	            let scene = this.createScene();
-	            this.createParticleSystem(scene, new BABYLON.Color4(.1, .2, .8, 1), new BABYLON.Color4(.2, .3, 1, 1));
-	            this.createParticleSystem(scene, new BABYLON.Color4(.8, .2, .1, 1), new BABYLON.Color4(.1, .3, .2, 1));
-	            this.loadSkull(scene);
-	            BABYLON.SceneLoader.ImportMesh("test", "babylonjs/", "skull.babylon", scene, function (newMeshes) {
-	                this.car = newMeshes[0];
+	            /*
+	                  let carTask = this.assetsManager.addMeshTask("car task", "test", "babylonjs/", "skull.babylon");
+	                  carTask.onSuccess = function(task: any) {
+	                    this.car = task.loadedMeshes[0];
+	                    this.car.position = new BABYLON.Vector3(5, 0, 0);
+	                    let car = this.car.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, {mass: 5, friction: 1});
+	            
+	                    scene.registerBeforeRender(function () {
+	                      car.angularVelocity.scaleEqual(.95);
+	                      //car.linearVelocity.scaleEqual(.9);
+	                    });
+	                  }.bind(this);
+	            */
+	            let addSkullTask = this.assetsManager.addMeshTask("add character", "test", "babylonjs/", "skull.babylon");
+	            addSkullTask.onSuccess = function (task) {
+	                this.skullMesh = task.loadedMeshes[0];
+	                this.car = Object.assign({}, task.loadedMeshes[0]);
 	                this.car.position = new BABYLON.Vector3(5, 0, 0);
-	                let car = this.car.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 5, friction: 1 });
-	                scene.registerBeforeRender(function () {
+	                this.car.ellipsoid = new BABYLON.Vector3(4, 4, 4);
+	                let car = this.car.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 10, friction: 1 });
+	                this.state.scene.registerBeforeRender(function () {
+	                    applyGravity_1.default(this.car, this.state.scene.getAnimationRatio());
 	                    car.angularVelocity.scaleEqual(.95);
 	                    //car.linearVelocity.scaleEqual(.9);
-	                });
-	            }.bind(this));
+	                }.bind(this));
+	            }.bind(this);
 	            /*
 	            BABYLON.SceneLoader.Load("babylonjs/", "originalcar.babylon", this.engine, function(newScene) {
 	              this.engine.runRenderLoop(function () {
@@ -26057,6 +26092,20 @@
 	            window.addEventListener("resize", function () {
 	                this.engine.resize();
 	            }.bind(this));
+	            this.assetsManager.onFinish = function (tasks) {
+	                this.assetsLoaded = true;
+	                console.log("Finish");
+	                this.engine.hideLoadingUI();
+	                this.engine.runRenderLoop(function () {
+	                    scene.render();
+	                }.bind(this));
+	            }.bind(this);
+	            this.assetsManager.onTaskError = function (task) {
+	                console.log("Error");
+	                console.log(task);
+	            };
+	            this.engine.displayLoadingUI();
+	            this.assetsManager.load();
 	        }
 	    }
 	    //Attaches control of the camera only when the pointer is locked to the screen
@@ -26070,146 +26119,6 @@
 	            this.pointerLocked = false;
 	            this.camera.detachControl(this.canvas);
 	        }
-	    }
-	    loadSkull(scene) {
-	        BABYLON.SceneLoader.ImportMesh("test", "babylonjs/", "skull.babylon", scene, function (newMeshes) {
-	            this.characterMesh = newMeshes[0];
-	            this.characterMesh.scaling = new BABYLON.Vector3(.2, .2, .2);
-	            this.characterShell = BABYLON.Mesh.CreateSphere("Character", 2, 11, scene, true);
-	            this.characterShell.isVisible = false;
-	            let shell = this.characterShell.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 100, friction: 100, restitution: .001 });
-	            this.characterShell.position = this.characterMesh.position;
-	            let w = false;
-	            let a = false;
-	            let s = false;
-	            let d = false;
-	            let space = false;
-	            let control = false;
-	            let shift = false;
-	            let onGround = false;
-	            let canJump = true;
-	            scene.actionManager = new BABYLON.ActionManager(scene);
-	            scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function (event) {
-	                if (event.sourceEvent.keyCode == 87) {
-	                    w = true;
-	                }
-	                if (event.sourceEvent.keyCode == 65) {
-	                    a = true;
-	                }
-	                if (event.sourceEvent.keyCode == 83) {
-	                    s = true;
-	                }
-	                if (event.sourceEvent.keyCode == 68) {
-	                    d = true;
-	                }
-	                if (event.sourceEvent.keyCode == 32) {
-	                    space = true;
-	                }
-	                if (event.sourceEvent.keyCode == 17) {
-	                    control = true;
-	                }
-	                if (event.sourceEvent.keyCode == 16) {
-	                    shift = true;
-	                }
-	            }));
-	            scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, function (event) {
-	                if (event.sourceEvent.keyCode == 87) {
-	                    w = false;
-	                }
-	                if (event.sourceEvent.keyCode == 65) {
-	                    a = false;
-	                }
-	                if (event.sourceEvent.keyCode == 83) {
-	                    s = false;
-	                }
-	                if (event.sourceEvent.keyCode == 68) {
-	                    d = false;
-	                }
-	                if (event.sourceEvent.keyCode == 32) {
-	                    space = false;
-	                }
-	                if (event.sourceEvent.keyCode == 17) {
-	                    control = false;
-	                }
-	                if (event.sourceEvent.keyCode == 16) {
-	                    shift = false;
-	                }
-	            }));
-	            let currentAnimationRatio = 1;
-	            scene.registerBeforeRender(function () {
-	                //shell.linearVelocity.scaleEqual(currentAnimationRatio/scene.getAnimationRatio());
-	                //shell.angularVelocity.scaleEqual(currentAnimationRatio/scene.getAnimationRatio());
-	                //shell.mass = shell.mass * (currentAnimationRatio/scene.getAnimationRatio());
-	                currentAnimationRatio = scene.getAnimationRatio();
-	                this.props.setFramerate(currentAnimationRatio);
-	                //Stop rotation of the character in order to apply friction to stop the character without impulse
-	                if (!w && !a && !s && !d) {
-	                    shell.angularVelocity.scaleEqual(0);
-	                }
-	                else {
-	                    shell.linearVelocity.scaleEqual(.99);
-	                    shell.angularVelocity.scaleEqual(.99);
-	                }
-	                //Adjust speed for framerate
-	                let localSpeed = this.props.settings.movementSpeed;
-	                //Y-axis point to calculate the angle of the camera
-	                let vector1 = new BABYLON.Vector2(0, 1);
-	                //Camera position relative to the object
-	                let vector2 = new BABYLON.Vector2(this.characterMesh.position.x - this.camera.position.x, this.characterMesh.position.z - this.camera.position.z);
-	                let angle = BABYLON.Angle.BetweenTwoPoints(vector1, vector2);
-	                //Calculation to determine if the character is on the ground
-	                var pickInfo = this.ground.intersects(new BABYLON.Ray(new BABYLON.Vector3(shell.position.x, shell.position.y, shell.position.z), new BABYLON.Vector3(0, 1, 0), 5.6));
-	                if (pickInfo.hit) {
-	                    //If the ground is within .1 of the bottom of the character (sphere diameter of 11)
-	                    onGround = (shell.position.y - 5.5) < pickInfo.pickedPoint.y + .25 &&
-	                        (shell.position.y - 5.5) > pickInfo.pickedPoint.y - .25;
-	                }
-	                let current = shell.linearVelocity;
-	                //Jump before modifying the localSpeed to compensate for shift and multiple directions
-	                if (space && canJump && onGround) {
-	                    this.characterShell.applyImpulse(new BABYLON.Vector3(0, this.props.settings.movementSpeed, 0), this.characterMesh.position);
-	                    canJump = false;
-	                    setTimeout(function () {
-	                        canJump = true;
-	                    }, 150);
-	                }
-	                if ((w && !s || s && !w) &&
-	                    (d && !a || a && !d)) {
-	                    localSpeed = localSpeed * Math.cos(DegreesToRadians_1.default(45));
-	                }
-	                let target = new BABYLON.Vector3(0, 0, 0);
-	                if (shift) {
-	                    localSpeed = localSpeed / 20;
-	                }
-	                if (w) {
-	                    target.x += localSpeed * Math.sin(angle.radians() + DegreesToRadians_1.default(90));
-	                    target.z -= localSpeed * Math.cos(angle.radians() + DegreesToRadians_1.default(90));
-	                }
-	                if (a) {
-	                    target.x -= localSpeed * Math.sin(angle.radians());
-	                    target.z += localSpeed * Math.cos(angle.radians());
-	                }
-	                if (s) {
-	                    target.x += localSpeed * Math.sin(angle.radians() - DegreesToRadians_1.default(90));
-	                    target.z -= localSpeed * Math.cos(angle.radians() - DegreesToRadians_1.default(90));
-	                }
-	                if (d) {
-	                    target.x += localSpeed * Math.sin(angle.radians());
-	                    target.z -= localSpeed * Math.cos(angle.radians());
-	                }
-	                if (shift) {
-	                    this.characterShell.applyImpulse(target, this.characterMesh.position);
-	                }
-	                else {
-	                    if (target.x != 0 || target.z != 0) {
-	                        this.characterShell.applyImpulse(new BABYLON.Vector3(target.x - current.x, 0, target.z - current.z), this.characterMesh.position);
-	                    }
-	                }
-	                this.characterMesh.rotation = new BABYLON.Vector3(0, -this.camera.alpha + DegreesToRadians_1.default(90), 0);
-	                //skull.rotation.x -= 1;
-	                this.camera.target = this.characterMesh.position;
-	            }.bind(this));
-	        }.bind(this));
 	    }
 	    mouseDown(event) {
 	        if (!this.props.settings.stickyRightMouseClick && event.nativeEvent.which == 3) {
@@ -26248,118 +26157,72 @@
 	            this.camera.radius = newRadius;
 	        }
 	    }
-	    createParticleSystem(scene, color1, color2) {
-	        let emitter = BABYLON.Mesh.CreateBox("emitter", .1, scene);
-	        emitter.position.y = -10;
-	        emitter.position.z = 10;
-	        emitter.isVisible = false;
-	        this.emitter = emitter;
-	        let particleSystem = new BABYLON.ParticleSystem("particles", 10000, scene);
-	        particleSystem.emitter = emitter;
-	        //texture
-	        particleSystem.particleTexture = new BABYLON.Texture("textures/flare.png", scene);
-	        //color range
-	        particleSystem.color1 = color1;
-	        particleSystem.color2 = color2;
-	        //power
-	        particleSystem.minAngularSpeed = -.5;
-	        particleSystem.maxAngularSpeed = .5;
-	        particleSystem.minSize = .1;
-	        particleSystem.maxSize = .3;
-	        particleSystem.minLifeTime = .5;
-	        particleSystem.maxLifeTime = 1;
-	        particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
-	        particleSystem.minEmitBox = new BABYLON.Vector3(-5, 0, -5);
-	        particleSystem.maxEmitBox = new BABYLON.Vector3(5, 0, 5);
-	        particleSystem.direction1 = new BABYLON.Vector3(-.3, 1, -.3);
-	        particleSystem.direction2 = new BABYLON.Vector3(.3, 1, .3);
-	        //power
-	        particleSystem.minEmitPower = 30;
-	        particleSystem.maxEmitPower = 50;
-	        //quantity
-	        particleSystem.emitRate = 100000;
-	        //gravity
-	        particleSystem.gravity = new BABYLON.Vector3(0, -98.1, 0);
-	        //start
-	        particleSystem.start();
-	        return particleSystem;
-	    }
 	    createScene() {
 	        let scene = new BABYLON.Scene(this.engine);
+	        this.assetsManager = new BABYLON.AssetsManager(scene);
 	        scene.collisionsEnabled = true;
-	        scene.enablePhysics(new BABYLON.Vector3(0, -98.1, 0), new BABYLON.OimoJSPlugin());
+	        scene.enablePhysics(new BABYLON.Vector3(0, 0, 0), new BABYLON.OimoJSPlugin());
 	        scene.fogMode = BABYLON.Scene.FOGMODE_EXP2;
-	        scene.fogDensity = .003;
+	        scene.fogDensity = .0003;
 	        //runs every frame
 	        scene.registerBeforeRender(function () {
+	            this.props.setFramerate(this.engine.getFps(), this.engine.getDeltaTime());
+	            this.props.setAnimationRatio(scene.getAnimationRatio());
 	            var pickResult = scene.pick(scene.pointerX, scene.pointerY, function (mesh) {
 	                return mesh.name == "ground";
 	            });
 	            if (pickResult.hit) {
-	                this.emitter.position = pickResult.pickedPoint;
+	                this.particleSystem.emitter.position = pickResult.pickedPoint;
 	            }
-	        }.bind(this));
-	        /*
-	        // Casting a ray to get height
-	        var ray = new BABYLON.Ray(new BABYLON.Vector3(scene.pointerX, this.ground.getBoundingInfo().boundingBox.maximumWorld.y + 1, this.car.position.z),
-	                                    new BABYLON.Vector3(0, -1, 0)); // Direction
-	        var worldInverse = new BABYLON.Matrix();
-	        this.ground.getWorldMatrix().invertToRef(worldInverse);
-	        ray = BABYLON.Ray.Transform(ray, worldInverse);
-	        var pickInfo = this.ground.intersects(ray);
-	        if (pickInfo.hit) {
-	          //this.car.position.x = pickInfo.pickedPoint.x + 1.5;
-	          //this.car.position.y = pickInfo.pickedPoint.y + 1;
-	          //this.car.position.z = pickInfo.pickedPoint.z - 1;
-	        }*/
-	        this.engine.runRenderLoop(function () {
-	            scene.render();
 	        }.bind(this));
 	        return scene;
 	    }
 	    render() {
-	        if (this.state.scene) {
+	        if (this.state.scene && this.assetsLoaded) {
 	            return (React.createElement("canvas", { id: "renderCanvas", style: { width: "100vw", height: "100vh" }, onKeyDown: this.keyDown, onMouseDown: this.mouseDown, onMouseUp: this.mouseUp, onWheel: this.mouseWheel },
 	                React.createElement(Light_1.default, { scene: this.state.scene }),
 	                React.createElement(ArcRotateCamera_1.default, { scene: this.state.scene, register: (camera) => this.camera = camera, canvas: this.canvas, target: BABYLON.Vector3.Zero(), mouseSensitivity: this.props.settings.mouseSensitivity }),
-	                React.createElement(Ground_1.default, { scene: this.state.scene, material: (function () {
+	                React.createElement(Ground_1.default, { scene: this.state.scene, register: ground => this.ground = ground, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
 	                        return material;
-	                    }.bind(this))(), register: ground => this.ground = ground }),
+	                    }.bind(this))() }),
+	                React.createElement(Character_1.default, { scene: this.state.scene, register: character => this.character = character, mesh: this.skullMesh, camera: this.camera, ground: this.ground, animationRatio: this.props.animationRatio, movementSpeed: this.props.settings.movementSpeed, jumpSpeed: this.props.settings.jumpSpeed }),
+	                React.createElement(ParticleSystem_1.default, { scene: this.state.scene, register: particleSystem => this.particleSystem = particleSystem, position: new BABYLON.Vector3(0, -10, 0), color1: new BABYLON.Color4(.1, .2, .8, 1), color2: new BABYLON.Color4(.2, .3, 1, 1), texture: new BABYLON.Texture("textures/flare.png", this.state.scene) }),
+	                React.createElement(ParticleSystem_1.default, { scene: this.state.scene, register: particleSystem => this.particleSystem2 = particleSystem, position: new BABYLON.Vector3(0, -10, 0), color1: new BABYLON.Color4(.8, .2, .1, 1), color2: new BABYLON.Color4(1, .3, .2, 1), texture: new BABYLON.Texture("textures/flare.png", this.state.scene) }),
 	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
 	                        return material;
-	                    }.bind(this))(), size: 500, position: new BABYLON.Vector3(0, 0, -250), rotation: new BABYLON.Vector3(Math.PI, 0, 0) }),
+	                    }.bind(this))(), size: 1000, position: new BABYLON.Vector3(0, 0, -500), rotation: new BABYLON.Vector3(Math.PI, 0, 0) }),
 	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.diffuseColor = new BABYLON.Color3(1, 0, 0);
 	                        return material;
-	                    }.bind(this))(), size: 500, position: new BABYLON.Vector3(0, 0, 250), rotation: new BABYLON.Vector3(0, 0, 0) }),
+	                    }.bind(this))(), size: 1000, position: new BABYLON.Vector3(0, 0, 500), rotation: new BABYLON.Vector3(0, 0, 0) }),
 	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
 	                        return material;
-	                    }.bind(this))(), size: 500, position: new BABYLON.Vector3(-250, 0, 0), rotation: new BABYLON.Vector3(0, -Math.PI / 2, 0) }),
+	                    }.bind(this))(), size: 1000, position: new BABYLON.Vector3(-500, 0, 0), rotation: new BABYLON.Vector3(0, -Math.PI / 2, 0) }),
 	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.diffuseColor = new BABYLON.Color3(1, 0, 0);
 	                        return material;
-	                    }.bind(this))(), size: 500, position: new BABYLON.Vector3(250, 0, 0), rotation: new BABYLON.Vector3(0, Math.PI / 2, 0) }),
-	                React.createElement(Sphere_1.default, { scene: this.state.scene, segments: 20, diameter: 6, mass: 6, material: (function () {
+	                    }.bind(this))(), size: 1000, position: new BABYLON.Vector3(500, 0, 0), rotation: new BABYLON.Vector3(0, Math.PI / 2, 0) }),
+	                React.createElement(Sphere_1.default, { scene: this.state.scene, animationRatio: this.props.animationRatio, segments: 20, diameter: 60, mass: 60, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.emissiveTexture = new BABYLON.Texture("textures/penguin.png", this.state.scene);
 	                        return material;
 	                    }.bind(this))(), position: new BABYLON.Vector3(0, 0, 0) }),
-	                React.createElement(Sphere_1.default, { scene: this.state.scene, hook: object => this.hook.Sphere = object, segments: 20, diameter: 7, mass: 7, material: (function () {
+	                React.createElement(Sphere_1.default, { scene: this.state.scene, animationRatio: this.props.animationRatio, hook: object => this.hook.Sphere = object, segments: 20, diameter: 70, mass: 70, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.diffuseColor = new BABYLON.Color3(.5, 1, .5);
 	                        material.specularColor = new BABYLON.Color3(0, 1, 0);
 	                        material.specularPower = 32;
 	                        return material;
 	                    }.bind(this))(), position: this.state.position }),
-	                React.createElement(Sphere_1.default, { scene: this.state.scene, segments: 20, diameter: 8, mass: 8, material: (function () {
+	                React.createElement(Sphere_1.default, { scene: this.state.scene, animationRatio: this.props.animationRatio, segments: 20, diameter: 80, mass: 80, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.diffuseColor = new BABYLON.Color3(1.0, 0.2, 0.7);
 	                        return material;
@@ -26424,18 +26287,6 @@
 
 /***/ },
 /* 238 */
-/***/ function(module, exports) {
-
-	"use strict";
-	function default_1(degrees) {
-	    return degrees * Math.PI / 180;
-	}
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = default_1;
-
-
-/***/ },
-/* 239 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26460,7 +26311,7 @@
 
 
 /***/ },
-/* 240 */
+/* 239 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26479,8 +26330,9 @@
 	        this.camera.inertia = 0;
 	        this.camera.angularSensibilityX = 1500 / this.mouseSensitivity;
 	        this.camera.angularSensibilityY = 1500 / this.mouseSensitivity;
-	        this.camera.lowerRadiusLimit = 5;
-	        this.camera.upperRadiusLimit = 100;
+	        this.camera.lowerRadiusLimit = 50;
+	        this.camera.upperRadiusLimit = 1000;
+	        this.camera.radius = 800;
 	        this.camera.lowerBetaLimit = .1;
 	        this.camera.upperBetaLimit = Math.PI / 2;
 	        this.props.register(this.camera);
@@ -26507,7 +26359,7 @@
 
 
 /***/ },
-/* 241 */
+/* 240 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26515,10 +26367,9 @@
 	const BABYLON = __webpack_require__(237);
 	class Ground extends React.Component {
 	    componentDidMount() {
-	        this.ground = BABYLON.Mesh.CreateGround("ground", 500, 500, 2, this.props.scene);
-	        this.ground.position.y = -10;
+	        this.ground = BABYLON.Mesh.CreateGround("ground", 1000, 1000, 2, this.props.scene);
+	        this.ground.position.y = -30;
 	        this.ground.material = this.props.material;
-	        this.ground.checkCollisions = true;
 	        this.ground.setPhysicsState(BABYLON.PhysicsEngine.PlaneImpostor, { mass: 0 });
 	        this.props.register(this.ground);
 	    }
@@ -26535,12 +26386,262 @@
 
 
 /***/ },
-/* 242 */
+/* 241 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	const React = __webpack_require__(1);
 	const BABYLON = __webpack_require__(237);
+	const degreesToRadians_1 = __webpack_require__(242);
+	const applyGravity_1 = __webpack_require__(243);
+	class Ground extends React.Component {
+	    componentDidMount() {
+	        this.load();
+	    }
+	    componentWillUnmount() {
+	        this.characterMesh.dispose();
+	        this.characterShell.dispose();
+	    }
+	    load() {
+	        if (this.props.camera && this.props.ground) {
+	            this.characterMesh = this.props.mesh;
+	            this.props.register(this.characterMesh);
+	            this.characterShell = BABYLON.Mesh.CreateSphere("Character", 2, 60, this.props.scene, true);
+	            this.characterShell.isVisible = false;
+	            let shell = this.characterShell.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 100, friction: 100, restitution: .001 });
+	            this.characterShell.position = this.characterMesh.position;
+	            let w = false;
+	            let a = false;
+	            let s = false;
+	            let d = false;
+	            let space = false;
+	            let control = false;
+	            let shift = false;
+	            let onGround = false;
+	            let canJump = true;
+	            this.props.scene.actionManager = new BABYLON.ActionManager(this.props.scene);
+	            this.props.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function (event) {
+	                if (event.sourceEvent.keyCode == 87) {
+	                    w = true;
+	                }
+	                if (event.sourceEvent.keyCode == 65) {
+	                    a = true;
+	                }
+	                if (event.sourceEvent.keyCode == 83) {
+	                    s = true;
+	                }
+	                if (event.sourceEvent.keyCode == 68) {
+	                    d = true;
+	                }
+	                if (event.sourceEvent.keyCode == 32) {
+	                    space = true;
+	                }
+	                if (event.sourceEvent.keyCode == 17) {
+	                    control = true;
+	                }
+	                if (event.sourceEvent.keyCode == 16) {
+	                    shift = true;
+	                }
+	            }));
+	            this.props.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, function (event) {
+	                if (event.sourceEvent.keyCode == 87) {
+	                    w = false;
+	                }
+	                if (event.sourceEvent.keyCode == 65) {
+	                    a = false;
+	                }
+	                if (event.sourceEvent.keyCode == 83) {
+	                    s = false;
+	                }
+	                if (event.sourceEvent.keyCode == 68) {
+	                    d = false;
+	                }
+	                if (event.sourceEvent.keyCode == 32) {
+	                    space = false;
+	                }
+	                if (event.sourceEvent.keyCode == 17) {
+	                    control = false;
+	                }
+	                if (event.sourceEvent.keyCode == 16) {
+	                    shift = false;
+	                }
+	            }));
+	            let currentAnimationRatio = 1;
+	            this.props.scene.registerBeforeRender(function () {
+	                this.props.camera.target = this.characterMesh.position;
+	                shell.linearVelocity.scaleEqual(currentAnimationRatio / this.props.animationRatio);
+	                shell.angularVelocity.scaleEqual(currentAnimationRatio / this.props.animationRatio);
+	                shell.mass = shell.mass * this.props.animationRatio;
+	                applyGravity_1.default(this.characterShell, this.props.animationRatio);
+	                currentAnimationRatio = this.props.animationRatio;
+	                //Stop rotation of the character in order to apply friction to stop the character without impulse
+	                if (!w && !a && !s && !d) {
+	                    shell.angularVelocity.scaleEqual(0);
+	                }
+	                else {
+	                }
+	                //Adjust speed for framerate
+	                let localSpeed = this.props.movementSpeed * this.props.animationRatio;
+	                //Y-axis point to calculate the angle of the camera
+	                let vector1 = new BABYLON.Vector2(0, 1);
+	                //Camera position relative to the object
+	                let vector2 = new BABYLON.Vector2(this.characterMesh.position.x - this.props.camera.position.x, this.characterMesh.position.z - this.props.camera.position.z);
+	                let angle = BABYLON.Angle.BetweenTwoPoints(vector1, vector2);
+	                //Calculation to determine if the character is on the ground
+	                var pickInfo = this.props.ground.intersects(new BABYLON.Ray(new BABYLON.Vector3(shell.position.x, shell.position.y, shell.position.z), new BABYLON.Vector3(0, 1, 0), 60));
+	                if (pickInfo.hit) {
+	                    //If the ground is within .1 of the bottom of the character (sphere diameter of 11)
+	                    onGround = (shell.position.y - 30) > pickInfo.pickedPoint.y - 2;
+	                }
+	                else {
+	                    onGround = false;
+	                }
+	                let current = shell.linearVelocity;
+	                //Jump before modifying the localSpeed to compensate for shift and multiple directions
+	                if (space && canJump && onGround) {
+	                    this.characterShell.applyImpulse(new BABYLON.Vector3(0, this.props.jumpSpeed * this.props.animationRatio, 0), this.characterMesh.position);
+	                    canJump = false;
+	                    setTimeout(function () {
+	                        canJump = true;
+	                    }, 50);
+	                }
+	                if ((w && !s || s && !w) &&
+	                    (d && !a || a && !d)) {
+	                    localSpeed = localSpeed * Math.cos(degreesToRadians_1.default(45));
+	                }
+	                let target = new BABYLON.Vector3(0, 0, 0);
+	                if (shift) {
+	                    localSpeed = localSpeed / 20;
+	                }
+	                if (w) {
+	                    target.x += localSpeed * Math.sin(angle.radians() + degreesToRadians_1.default(90));
+	                    target.z -= localSpeed * Math.cos(angle.radians() + degreesToRadians_1.default(90));
+	                }
+	                if (a) {
+	                    target.x -= localSpeed * Math.sin(angle.radians());
+	                    target.z += localSpeed * Math.cos(angle.radians());
+	                }
+	                if (s) {
+	                    target.x += localSpeed * Math.sin(angle.radians() - degreesToRadians_1.default(90));
+	                    target.z -= localSpeed * Math.cos(angle.radians() - degreesToRadians_1.default(90));
+	                }
+	                if (d) {
+	                    target.x += localSpeed * Math.sin(angle.radians());
+	                    target.z -= localSpeed * Math.cos(angle.radians());
+	                }
+	                if (shift) {
+	                    this.characterShell.applyImpulse(target, this.characterMesh.position);
+	                }
+	                else {
+	                    if (target.x != 0 || target.z != 0) {
+	                        this.characterShell.applyImpulse(new BABYLON.Vector3(target.x - current.x, 0, target.z - current.z), this.characterMesh.position);
+	                    }
+	                }
+	                this.characterMesh.rotation = new BABYLON.Vector3(0, -this.props.camera.alpha + degreesToRadians_1.default(90), 0);
+	                //skull.rotation.x -= 1;
+	            }.bind(this));
+	        }
+	        else {
+	            setTimeout(function () {
+	                this.load();
+	            }.bind(this), 10);
+	        }
+	    }
+	    render() {
+	        return null;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Ground;
+
+
+/***/ },
+/* 242 */
+/***/ function(module, exports) {
+
+	"use strict";
+	function default_1(degrees) {
+	    return degrees * Math.PI / 180;
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = default_1;
+
+
+/***/ },
+/* 243 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const BABYLON = __webpack_require__(237);
+	function default_1(physicsBody, scale) {
+	    physicsBody.applyImpulse(new BABYLON.Vector3(0, -9.81 * scale * scale, 0), physicsBody.position);
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = default_1;
+
+
+/***/ },
+/* 244 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const React = __webpack_require__(1);
+	const BABYLON = __webpack_require__(237);
+	class ParticleSystem extends React.Component {
+	    componentDidMount() {
+	        let emitter = BABYLON.Mesh.CreateBox("emitter", .1, this.props.scene);
+	        emitter.position = this.props.position;
+	        emitter.isVisible = false;
+	        let particleSystem = new BABYLON.ParticleSystem("particles", 50000, this.props.scene);
+	        particleSystem.emitter = emitter;
+	        //texture
+	        particleSystem.particleTexture = this.props.texture;
+	        //color range
+	        particleSystem.color1 = this.props.color1;
+	        particleSystem.color2 = this.props.color2;
+	        //power
+	        particleSystem.minAngularSpeed = -.5;
+	        particleSystem.maxAngularSpeed = .5;
+	        particleSystem.minSize = 1;
+	        particleSystem.maxSize = 3;
+	        particleSystem.minLifeTime = .5;
+	        particleSystem.maxLifeTime = 1;
+	        particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
+	        particleSystem.minEmitBox = new BABYLON.Vector3(-5, 0, -5);
+	        particleSystem.maxEmitBox = new BABYLON.Vector3(5, 0, 5);
+	        particleSystem.direction1 = new BABYLON.Vector3(-.3, 1, -.3);
+	        particleSystem.direction2 = new BABYLON.Vector3(.3, 1, .3);
+	        //power
+	        particleSystem.minEmitPower = 30;
+	        particleSystem.maxEmitPower = 50;
+	        //quantity
+	        particleSystem.emitRate = 100000;
+	        //gravity
+	        particleSystem.gravity = new BABYLON.Vector3(0, -98.1, 0);
+	        //start
+	        particleSystem.start();
+	        this.props.register(particleSystem);
+	        this.particleSystem = particleSystem;
+	    }
+	    componentWillUnmount() {
+	        this.particleSystem.dispose();
+	    }
+	    render() {
+	        return null;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = ParticleSystem;
+
+
+/***/ },
+/* 245 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const React = __webpack_require__(1);
+	const BABYLON = __webpack_require__(237);
+	const applyGravity_1 = __webpack_require__(243);
 	class Sphere extends React.Component {
 	    componentWillReceiveProps(props) {
 	        if (this.props.hook) {
@@ -26577,8 +26678,9 @@
 	        this.sphere.animations.push(animationBox);
 	        //this.props.scene.beginAnimation(this.sphere, 0, 100, true);
 	        this.props.scene.registerBeforeRender(function () {
+	            applyGravity_1.default(this.sphere, this.props.animationRatio);
 	            physicalSphere.angularVelocity.scaleEqual(.92);
-	        });
+	        }.bind(this));
 	    }
 	    componentWillUnmount() {
 	        this.sphere.dispose();
@@ -26593,7 +26695,7 @@
 
 
 /***/ },
-/* 243 */
+/* 246 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26621,12 +26723,12 @@
 
 
 /***/ },
-/* 244 */
+/* 247 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	const React = __webpack_require__(1);
-	const Label_1 = __webpack_require__(245);
+	const Label_1 = __webpack_require__(248);
 	class Settings extends React.Component {
 	    render() {
 	        if (this.props.showSettings) {
@@ -26636,6 +26738,15 @@
 	                    React.createElement("h3", null,
 	                        "FPS: ",
 	                        this.props.framerate),
+	                    React.createElement("h3", null,
+	                        "Animation Ratio: ",
+	                        this.props.animationRatio),
+	                    React.createElement("h3", null,
+	                        "Movement Speed: ",
+	                        this.props.settings.movementSpeed),
+	                    React.createElement("h3", null,
+	                        "Jump Speed: ",
+	                        this.props.settings.jumpSpeed),
 	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Mouse Sensitivity"), control: React.createElement("input", { type: "text", value: this.props.settings.mouseSensitivity, onChange: event => this.props.changeSetting("mouseSensitivity", event.target.value) }) }),
 	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Sticky Right Mouse Click"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.stickyRightMouseClick, onChange: event => this.props.changeSetting("stickyRightMouseClick", !this.props.settings.stickyRightMouseClick) }) }))));
 	        }
@@ -26649,7 +26760,7 @@
 
 
 /***/ },
-/* 245 */
+/* 248 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26666,7 +26777,7 @@
 
 
 /***/ },
-/* 246 */
+/* 249 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26685,7 +26796,7 @@
 
 
 /***/ },
-/* 247 */
+/* 250 */
 /***/ function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {/**
