@@ -104,15 +104,17 @@ class Ground extends React.Component<Props, {}> {
         shell.linearVelocity.scaleEqual(currentAnimationRatio/this.props.animationRatio);
         shell.angularVelocity.scaleEqual(currentAnimationRatio/this.props.animationRatio);
         shell.mass = shell.mass * this.props.animationRatio;
-        applyGravity(this.characterShell, this.props.animationRatio);
+        if (!onGround) {
+          applyGravity(this.characterShell, this.props.animationRatio);
+        }
         currentAnimationRatio = this.props.animationRatio;
         //Stop rotation of the character in order to apply friction to stop the character without impulse
         if (!w && !a && !s && !d) {
           shell.angularVelocity.scaleEqual(0);
         }
         else {
-          //shell.linearVelocity.scaleEqual(.99);
-          //shell.angularVelocity.scaleEqual(.99);
+          shell.linearVelocity.scaleEqual(.99);
+          shell.angularVelocity.scaleEqual(.99);
         }
         //Adjust speed for framerate
         let localSpeed = this.props.movementSpeed * this.props.animationRatio;
@@ -123,21 +125,30 @@ class Ground extends React.Component<Props, {}> {
           this.characterMesh.position.z - this.props.camera.position.z);
         let angle = BABYLON.Angle.BetweenTwoPoints(vector1, vector2);
 
+        let current = shell.linearVelocity;
+        let target = new BABYLON.Vector3(0, 0, 0);
         //Calculation to determine if the character is on the ground
         var pickInfo = this.props.ground.intersects(
           new BABYLON.Ray(
-            new BABYLON.Vector3(shell.position.x, shell.position.y, shell.position.z),
-            new BABYLON.Vector3(0, 1, 0),
-            60
+            new BABYLON.Vector3(shell.position.x, shell.position.y - 20, shell.position.z),
+            new BABYLON.Vector3(0, 1, 0)
           ));
         if (pickInfo.hit) {
-          //If the ground is within .1 of the bottom of the character (sphere diameter of 11)
-          onGround = (shell.position.y - 30) > pickInfo.pickedPoint.y - 2;
+          //If the ground is within 1 of the bottom of the character (sphere diameter of 60)
+          if (canJump) {
+            target.y = -current.y;
+          }
+          onGround = true;
+          if (canJump && pickInfo.pickedPoint.y > shell.position.y - 29) {
+            target.y += (pickInfo.pickedPoint.y - (shell.position.y - 30)) * (pickInfo.pickedPoint.y - (shell.position.y - 30));
+          }
+          if (canJump && pickInfo.pickedPoint.y < shell.position.y - 31) {
+            target.y -= (pickInfo.pickedPoint.y - (shell.position.y - 30)) * (pickInfo.pickedPoint.y - (shell.position.y - 30));
+          }
         }
         else {
           onGround = false;
         }
-        let current = shell.linearVelocity;
 
         //Jump before modifying the localSpeed to compensate for shift and multiple directions
         if (space && canJump && onGround) {
@@ -145,15 +156,13 @@ class Ground extends React.Component<Props, {}> {
           canJump = false;
           setTimeout(function () {
             canJump = true;
-          }, 50);
+          }, 150);
         }
 
         if ((w && !s || s && !w) &&
         (d && !a || a && !d)) {
           localSpeed = localSpeed * Math.cos(degreesToRadians(45));
         }
-
-        let target = new BABYLON.Vector3(0, 0, 0);
 
         if (shift) {
           localSpeed = localSpeed/20;
@@ -178,11 +187,9 @@ class Ground extends React.Component<Props, {}> {
           this.characterShell.applyImpulse(target, this.characterMesh.position);
         }
         else {
-          if (target.x != 0 || target.z != 0) {
-            this.characterShell.applyImpulse(
-              new BABYLON.Vector3(target.x - current.x, 0, target.z - current.z),
-              this.characterMesh.position);
-          }
+          this.characterShell.applyImpulse(
+            new BABYLON.Vector3(target.x - current.x, target.y, target.z - current.z),
+            this.characterMesh.position);
         }
         this.characterMesh.rotation = new BABYLON.Vector3(0, -this.props.camera.alpha + degreesToRadians(90), 0);
         //skull.rotation.x -= 1;

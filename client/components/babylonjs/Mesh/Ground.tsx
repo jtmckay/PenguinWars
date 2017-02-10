@@ -11,10 +11,10 @@ class Ground extends React.Component<Props, {}> {
   ground: BABYLON.Mesh;
 
   componentDidMount() {
-    this.ground = BABYLON.Mesh.CreateGround("ground", 1000, 1000, 2, this.props.scene);
+    this.ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/A1.jpg", 4000, 4000, 500, -500, 500, this.props.scene);
     this.ground.position.y = -30;
     this.ground.material = this.props.material;
-    this.ground.setPhysicsState(BABYLON.PhysicsEngine.PlaneImpostor, {mass: 0});
+    this.ground.setPhysicsState(BABYLON.PhysicsEngine.MeshImpostor, {mass: 0});
 
     this.props.register(this.ground);
   }

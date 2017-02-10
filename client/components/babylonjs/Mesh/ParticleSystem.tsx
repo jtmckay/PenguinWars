@@ -18,7 +18,7 @@ class ParticleSystem extends React.Component<Props, {}> {
     emitter.position = this.props.position;
     emitter.isVisible = false;
 
-    let particleSystem = new BABYLON.ParticleSystem("particles", 50000, this.props.scene);
+    let particleSystem = new BABYLON.ParticleSystem("particles", 50, this.props.scene);
     particleSystem.emitter = emitter;
     //texture
     particleSystem.particleTexture = this.props.texture;
