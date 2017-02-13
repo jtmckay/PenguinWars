@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as BABYLON from 'babylonjs';
+import Gravitator from './Gravitator';
 import Light from './Light';
 import UniversalCamera from './UniversalCamera';
 import ArcRotateCamera from './ArcRotateCamera';
@@ -9,18 +10,12 @@ import ParticleSystem from './Mesh/ParticleSystem';
 import Sphere from './Mesh/Sphere';
 import Model from './Mesh/Model';
 import Plane from './Mesh/Plane';
-import applyGravity from '../../functions/applyGravity';
+import SettingsClass from '../shared/classes/SettingsClass';
 
 interface Props {
-  animationRatio: number;
-  settings: {
-    movementSpeed: number;
-    jumpSpeed: number;
-    mouseSensitivity: number;
-    stickyRightMouseClick: boolean;
-  };
-  setFramerate: (fps: number) => void;
-  setAnimationRatio: (ratio: number) => void;
+  settings: SettingsClass;
+  invertMouse: () => void;
+  setFramerate: (fps: number, animationRatio: number) => void;
 }
 
 interface State {
@@ -36,6 +31,7 @@ class Canvas extends React.Component<Props, State> {
     };
 
     this.WebGLSupported = BABYLON.Engine.isSupported();
+    this.gravitator = new Gravitator();
 
     this.pointerLockCallback = this.pointerLockCallback.bind(this);
     this.lockPointer = this.lockPointer.bind(this);
@@ -46,6 +42,8 @@ class Canvas extends React.Component<Props, State> {
     this.mouseWheel = this.mouseWheel.bind(this);
   }
   WebGLSupported: boolean;
+  gravitator: Gravitator;
+
   assetsLoaded: boolean;
   canvas: HTMLCanvasElement;
   engine: BABYLON.Engine;
@@ -87,18 +85,21 @@ class Canvas extends React.Component<Props, State> {
         });
       }.bind(this);
 */
+      let addCharacterTask = this.assetsManager.addMeshTask("add character", "test", "babylonjs/", "skull.babylon");
+      addCharacterTask.onSuccess = function(task: any) {
+        this.skullMesh = task.loadedMeshes[0];
+      }.bind(this);
+
       let addSkullTask = this.assetsManager.addMeshTask("add character", "test", "babylonjs/", "skull.babylon");
       addSkullTask.onSuccess = function(task: any) {
-        this.skullMesh = task.loadedMeshes[0];
-
-        this.car = Object.assign({}, task.loadedMeshes[0]);
-        this.car.position = new BABYLON.Vector3(5, 0, 0);
-        this.car.ellipsoid = new BABYLON.Vector3(4, 4, 4);
-        let car = this.car.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, {mass: 10, friction: 1});
-
+        this.car = task.loadedMeshes[0];
+        this.car.position = new BABYLON.Vector3(150, 200, 0);
+        let car = this.car.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, {mass: 100, friction: 100});
+        //this.car.scaling = new BABYLON.Vector3(5, 5, 5);a
         this.state.scene.registerBeforeRender(function () {
-          applyGravity(this.car, this.state.scene.getAnimationRatio());
-          car.angularVelocity.scaleEqual(.95);
+          this.gravitator.applyPhysics(car);
+          this.gravitator.applyGravity(this.car);
+          this.gravitator.applyGroundConstraints(car, this.car, 30);
           //car.linearVelocity.scaleEqual(.9);
         }.bind(this));
       }.bind(this);
@@ -148,28 +149,29 @@ class Canvas extends React.Component<Props, State> {
   pointerLockCallback(event) {
     if (document.pointerLockElement == this.canvas) {
       this.pointerLocked = true;
-      this.camera.attachControl(this.canvas, true);
     }
     else {
       this.pointerLocked = false;
-      this.camera.detachControl(this.canvas);
     }
   }
 
   mouseDown(event) {
-    if (!this.props.settings.stickyRightMouseClick && event.nativeEvent.which == 3) {
+    if (event.nativeEvent.which == 1) {
+      this.camera.detachControl(this.canvas);
+    }
+    if (!this.props.settings.mouse.stickyRightMouseClick && event.nativeEvent.which == 3) {
       this.lockPointer();
     }
-    else if (this.props.settings.stickyRightMouseClick && event.nativeEvent.which == 3 && !this.pointerLocked) {
+    else if (this.props.settings.mouse.stickyRightMouseClick && event.nativeEvent.which == 3 && !this.pointerLocked) {
       this.lockPointer();
     }
-    else if (this.props.settings.stickyRightMouseClick && event.nativeEvent.which == 3 && this.pointerLocked) {
+    else if (this.props.settings.mouse.stickyRightMouseClick && event.nativeEvent.which == 3 && this.pointerLocked) {
       this.unlockPointer();
     }
   }
 
   mouseUp(event) {
-    if (!this.props.settings.stickyRightMouseClick && event.nativeEvent.which == 3) {
+    if (!this.props.settings.mouse.stickyRightMouseClick && event.nativeEvent.which == 3) {
       this.unlockPointer();
     }
   }
@@ -182,11 +184,19 @@ class Canvas extends React.Component<Props, State> {
   }
 
   lockPointer() {
+    if (this.props.settings.mouse.invertTouch) {
+      this.props.invertMouse();
+    }
     this.canvas.requestPointerLock();
+    this.camera.attachControl(this.canvas, true);
   }
 
   unlockPointer() {
+    if (this.props.settings.mouse.invertTouch) {
+      this.props.invertMouse();
+    }
     document.exitPointerLock();
+    this.camera.detachControl(this.canvas);
   }
 
   mouseMoved(event) {
@@ -210,19 +220,17 @@ class Canvas extends React.Component<Props, State> {
 
     //runs every frame
     scene.registerBeforeRender(function () {
-      this.props.setFramerate(this.engine.getFps(), this.engine.getDeltaTime());
-      this.props.setAnimationRatio(scene.getAnimationRatio());
+      this.props.setFramerate(this.engine.getFps(), this.gravitator.appliedAnimationRatio);
       var pickResult = scene.pick(scene.pointerX, scene.pointerY, function (mesh) {
         return mesh.name == "ground";
       });
 
       if (pickResult.hit) {
         this.particleSystem.emitter.position = pickResult.pickedPoint;
-        //this.car.position.x = pickResult.pickedPoint.x;
-        //this.car.position.z = pickResult.pickedPoint.z;
       }
 
     }.bind(this));
+    this.gravitator.registerGravitator(scene);
     return scene;
   }
 
@@ -233,6 +241,7 @@ class Canvas extends React.Component<Props, State> {
           onKeyDown={this.keyDown}
           onMouseDown={this.mouseDown}
           onMouseUp={this.mouseUp}
+          onTouchStart={() => this.camera.attachControl(this.canvas, true)}
           onWheel={this.mouseWheel}>
           <Light scene={this.state.scene} />
           <ArcRotateCamera
@@ -240,20 +249,203 @@ class Canvas extends React.Component<Props, State> {
             register={(camera: BABYLON.ArcRotateCamera) => this.camera = camera}
             canvas={this.canvas}
             target={BABYLON.Vector3.Zero()}
-            mouseSensitivity={this.props.settings.mouseSensitivity} />
+            invertX={this.props.settings.mouse.invertX}
+            invertY={this.props.settings.mouse.invertY}
+            invertTouch={this.props.settings.mouse.invertTouch}
+            mouseSensitivityX={this.props.settings.mouse.mouseSensitivityX}
+            mouseSensitivityY={this.props.settings.mouse.mouseSensitivityY} />
           <Ground scene={this.state.scene}
-            register={ground => this.ground = ground}
+            register={ground => this.gravitator.ground = ground}
             material={(function() {
               let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
               material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
               return material;
             }.bind(this))()} />
-          <Character scene={this.state.scene}
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.7, .3, .3);
+              return material;
+            }.bind(this))()}
+            size={4000}
+            position={new BABYLON.Vector3(4000, 0, 0)}
+            rotation={new BABYLON.Vector3(0, Math.PI/2, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
+              return material;
+            }.bind(this))()}
+            size={4000}
+            position={new BABYLON.Vector3(-4000, 0, 0)}
+            rotation={new BABYLON.Vector3(0, -Math.PI/2, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.3, .3, .7);
+              return material;
+            }.bind(this))()}
+            size={4000}
+            position={new BABYLON.Vector3(0, 0, -4000)}
+            rotation={new BABYLON.Vector3(Math.PI, 0, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.7, .3, .7);
+              return material;
+            }.bind(this))()}
+            size={4000}
+            position={new BABYLON.Vector3(0, 0, 4000)}
+            rotation={new BABYLON.Vector3(0, 0, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.7, .3, .3);
+              return material;
+            }.bind(this))()}
+            size={2828.427125}
+            position={new BABYLON.Vector3(3000, 0, 3000)}
+            rotation={new BABYLON.Vector3(0, Math.PI/4, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
+              return material;
+            }.bind(this))()}
+            size={2828.427125}
+            position={new BABYLON.Vector3(3000, 0, -3000)}
+            rotation={new BABYLON.Vector3(0, Math.PI-Math.PI/4, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.3, .3, .7);
+              return material;
+            }.bind(this))()}
+            size={2828.427125}
+            position={new BABYLON.Vector3(-3000, 0, -3000)}
+            rotation={new BABYLON.Vector3(0, Math.PI/4+Math.PI, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.7, .3, .7);
+              return material;
+            }.bind(this))()}
+            size={2828.427125}
+            position={new BABYLON.Vector3(-3000, 0, 3000)}
+            rotation={new BABYLON.Vector3(0, -Math.PI/4, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.7, .3, .3);
+              material.alpha = .3;
+              return material;
+            }.bind(this))()}
+            size={4000}
+            position={new BABYLON.Vector3(4000, 0, 0)}
+            rotation={new BABYLON.Vector3(0, Math.PI/2+Math.PI, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
+              material.alpha = .3;
+              return material;
+            }.bind(this))()}
+            size={4000}
+            position={new BABYLON.Vector3(-4000, 0, 0)}
+            rotation={new BABYLON.Vector3(0, Math.PI-Math.PI/2, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.3, .3, .7);
+              material.alpha = .3;
+              return material;
+            }.bind(this))()}
+            size={4000}
+            position={new BABYLON.Vector3(0, 0, -4000)}
+            rotation={new BABYLON.Vector3(Math.PI, Math.PI, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.7, .3, .7);
+              material.alpha = .3;
+              return material;
+            }.bind(this))()}
+            size={4000}
+            position={new BABYLON.Vector3(0, 0, 4000)}
+            rotation={new BABYLON.Vector3(0, Math.PI, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.7, .3, .3);
+              material.alpha = .3;
+              return material;
+            }.bind(this))()}
+            size={2828.427125}
+            position={new BABYLON.Vector3(3000, 0, 3000)}
+            rotation={new BABYLON.Vector3(0, Math.PI+Math.PI/4, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
+              material.alpha = .3;
+              return material;
+            }.bind(this))()}
+            size={2828.427125}
+            position={new BABYLON.Vector3(3000, 0, -3000)}
+            rotation={new BABYLON.Vector3(0, -Math.PI/4, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.3, .3, .7);
+              material.alpha = .3;
+              return material;
+            }.bind(this))()}
+            size={2828.427125}
+            position={new BABYLON.Vector3(-3000, 0, -3000)}
+            rotation={new BABYLON.Vector3(0, Math.PI/4, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.7, .3, .7);
+              material.alpha = .3;
+              return material;
+            }.bind(this))()}
+            size={2828.427125}
+            position={new BABYLON.Vector3(-3000, 0, 3000)}
+            rotation={new BABYLON.Vector3(0, Math.PI-Math.PI/4, 0)} />
+          <Plane scene={this.state.scene}
+            register={plane => this.plane = plane}
+            material={(function() {
+              let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+              material.diffuseColor = new BABYLON.Color3(.3, .3, .3);
+              material.alpha = .3;
+              return material;
+            }.bind(this))()}
+            size={8000}
+            position={new BABYLON.Vector3(0, 1400, 0)}
+            rotation={new BABYLON.Vector3(Math.PI/2, 0, 0)} />
+          <Character gravitator={this.gravitator}
+            scene={this.state.scene}
             register={character => this.character = character}
             mesh={this.skullMesh}
             camera={this.camera}
-            ground={this.ground}
-            animationRatio={this.props.animationRatio}
+            keyboard={this.props.settings.keyboard}
             movementSpeed={this.props.settings.movementSpeed}
             jumpSpeed={this.props.settings.jumpSpeed} />
           <ParticleSystem scene={this.state.scene}
@@ -269,18 +461,20 @@ class Canvas extends React.Component<Props, State> {
             color2={new BABYLON.Color4(1, .3, .2, 1)}
             texture={new BABYLON.Texture("textures/flare.png", this.state.scene)} />
           <Sphere scene={this.state.scene}
-            animationRatio={this.props.animationRatio}
+            gravitator={this.gravitator}
+            animationRatio={this.gravitator.appliedAnimationRatio}
             segments={20}
-            diameter={60}
+            diameter={20}
             mass={60}
             material={(function() {
               let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
               material.emissiveTexture = new BABYLON.Texture("textures/penguin.png", this.state.scene);
               return material;
             }.bind(this))()}
-            position={new BABYLON.Vector3(0, 0, 0)} />
+            position={new BABYLON.Vector3(0, 10, 0)} />
           <Sphere scene={this.state.scene}
-            animationRatio={this.props.animationRatio}
+            gravitator={this.gravitator}
+            animationRatio={this.gravitator.appliedAnimationRatio}
             hook={object => this.hook.Sphere = object}
             segments={20}
             diameter={70}
@@ -294,7 +488,8 @@ class Canvas extends React.Component<Props, State> {
             }.bind(this))()}
             position={this.state.position} />
           <Sphere scene={this.state.scene}
-            animationRatio={this.props.animationRatio}
+            gravitator={this.gravitator}
+            animationRatio={this.gravitator.appliedAnimationRatio}
             segments={20}
             diameter={80}
             mass={80}
@@ -303,7 +498,7 @@ class Canvas extends React.Component<Props, State> {
               material.diffuseColor = new BABYLON.Color3(1.0, 0.2, 0.7);
               return material;
             }.bind(this))()}
-            position={new BABYLON.Vector3(-50, 0, 0)} />
+            position={new BABYLON.Vector3(-50, 5, 0)} />
         </canvas>
       );
     }

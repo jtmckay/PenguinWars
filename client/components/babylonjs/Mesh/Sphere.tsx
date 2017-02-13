@@ -1,9 +1,10 @@
 import * as React from 'react';
 import * as BABYLON from 'babylonjs';
-import applyGravity from '../../../functions/applyGravity';
+import Gravitator from '../Gravitator';
 
 interface Props {
   scene: BABYLON.Scene;
+  gravitator: Gravitator;
   hook?: (Object) => void;
   material: BABYLON.StandardMaterial;
   position: BABYLON.Vector3;
@@ -59,8 +60,9 @@ class Sphere extends React.Component<Props, {}> {
     //this.props.scene.beginAnimation(this.sphere, 0, 100, true);
 
     this.props.scene.registerBeforeRender(function () {
-      applyGravity(this.sphere, this.props.animationRatio);
-      physicalSphere.angularVelocity.scaleEqual(.92);
+      this.props.gravitator.applyPhysics(physicalSphere);
+      this.props.gravitator.applyGravity(this.sphere);
+      this.props.gravitator.applyGroundConstraints(physicalSphere, this.sphere, this.props.diameter/2);
     }.bind(this));
   }
 

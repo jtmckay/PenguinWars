@@ -1,18 +1,16 @@
 import * as React from 'react';
+import * as BABYLON from 'babylonjs';
 import { Link } from 'react-router';
 import Canvas from '../babylonjs/Canvas';
-import Settings from './Settings';
+import Settings from '../settings/Settings';
+import SettingsClass from '../shared/classes/SettingsClass';
+import OnScreenKeyboard from '../shared/OnScreenKeyboard';
 
 interface State {
   showSettings?: boolean;
   animationRatio?: number;
   framerate?: number;
-  settings?: {
-    movementSpeed: number;
-    jumpSpeed: number;
-    mouseSensitivity: number;
-    stickyRightMouseClick: boolean;
-  };
+  settings?: SettingsClass;
 }
 
 class HomePage extends React.Component<{}, State> {
@@ -20,25 +18,14 @@ class HomePage extends React.Component<{}, State> {
     super(props);
 
     this.state ={
-      showSettings: false,
+      showSettings: true,
       animationRatio: 1,
-      settings: {
-        movementSpeed: 200,
-        jumpSpeed: 400,
-        mouseSensitivity: 5,
-        stickyRightMouseClick: false
-      }
+      settings: new SettingsClass()
     };
-
-    this.animationRatios = [];
-    this.averageAnimationRatio = 1;
 
     this.keyDown = this.keyDown.bind(this);
     this.changeSetting = this.changeSetting.bind(this);
   }
-
-  averageAnimationRatio: number;
-  animationRatios: Array<number>;
 
   keyDown(event) {
     if (event.key == 'Escape') {
@@ -46,39 +33,87 @@ class HomePage extends React.Component<{}, State> {
     }
   }
 
-  changeSetting(settingName: string, settingValue: any) {
+  changeSetting(groupName: string, settingName: string, settingValue: any) {
+    let newGroup = {};
     let newSetting = {};
     newSetting[settingName] = settingValue;
-    this.setState({ settings: Object.assign({}, this.state.settings, newSetting)});
+    if (groupName == "keyboard") {
+      if (settingValue == true) {
+        if (settingName == 'q') {
+          newSetting['w'] = true;
+          newSetting['a'] = true;
+          newSetting['s'] = false;
+          newSetting['d'] = false;
+        }
+        if (settingName == 'e') {
+          newSetting['w'] = true;
+          newSetting['a'] = false;
+          newSetting['s'] = false;
+          newSetting['d'] = true;
+        }
+        if (settingName == 'z') {
+          newSetting['w'] = false;
+          newSetting['a'] = true;
+          newSetting['s'] = true;
+          newSetting['d'] = false;
+        }
+        if (settingName == 'c') {
+          newSetting['w'] = false;
+          newSetting['a'] = false;
+          newSetting['s'] = true;
+          newSetting['d'] = true;
+        }
+        if (settingName == 'w') {
+          newSetting['a'] = false;
+          newSetting['s'] = false;
+          newSetting['d'] = false;
+        }
+          if (settingName == 's') {
+            newSetting['w'] = false;
+            newSetting['a'] = false;
+            newSetting['d'] = false;
+          }
+        if (settingName == 'a') {
+          newSetting['d'] = false;
+          newSetting['w'] = false;
+          newSetting['s'] = false;
+        }
+        if (settingName == 'd') {
+          newSetting['a'] = false;
+          newSetting['w'] = false;
+          newSetting['s'] = false;
+        }
+        if (settingName == "stop") {
+          newSetting['w'] = false;
+          newSetting['a'] = false;
+          newSetting['s'] = false;
+          newSetting['d'] = false;
+        }
+      }
+    }
+    newGroup[groupName] = Object.assign({}, this.state.settings[groupName], newSetting);
+    this.setState({ settings: Object.assign({}, this.state.settings, newGroup)});
   }
 
   render() {
     return (
       <div onKeyDown={this.keyDown}>
+        <OnScreenKeyboard settings={this.state.settings}
+          changeSetting={this.changeSetting} />
         <Settings framerate={this.state.framerate}
           animationRatio={this.state.animationRatio}
           settings={this.state.settings}
+          toggleShowSettings={() => this.setState({showSettings: !this.state.showSettings})}
           changeSetting={this.changeSetting}
           showSettings={this.state.showSettings} />
         <Canvas settings={this.state.settings}
-          animationRatio={this.state.animationRatio}
-          setAnimationRatio={(ratio: number) => {
-            this.animationRatios.push(ratio);
-            if (this.animationRatios.length >= 100) {
-              this.averageAnimationRatio = this.animationRatios.reduce((a, b) => { return a+b; })/this.animationRatios.length;
-              this.setState({animationRatio: this.averageAnimationRatio});
-              this.animationRatios.length = 0;
-            }
-            else {
-              if (ratio < this.state.animationRatio && ratio > this.state.animationRatio + 1) {
-                this.setState({animationRatio: ratio});
-              }
-              else {
-                this.setState({animationRatio: this.averageAnimationRatio});
-              }
-            }
-          }}
-          setFramerate={(fps: number) => this.setState({framerate: fps }) } />
+          invertMouse={() => this.setState({ settings:
+            Object.assign({}, this.state.settings,
+              {mouse: Object.assign({}, this.state.settings.mouse,
+                {mouseSensitivityX: -this.state.settings.mouse.mouseSensitivityX,
+                  mouseSensitivityY: -this.state.settings.mouse.mouseSensitivityY})})})}
+          setFramerate={(fps: number, animationRatio: number) =>
+            this.setState({framerate: fps, animationRatio: animationRatio }) } />
       </div>
     );
   }

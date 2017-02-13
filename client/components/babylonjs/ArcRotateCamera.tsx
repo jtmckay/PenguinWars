@@ -6,30 +6,52 @@ interface Props {
   register: (camera: BABYLON.Camera) => void;
   canvas: HTMLCanvasElement;
   target: BABYLON.Vector3;
-  mouseSensitivity: number;
+  mouseSensitivityX: number;
+  mouseSensitivityY: number;
+  invertX: boolean,
+  invertY: boolean,
+  invertTouch: boolean,
 }
 
 class ArcRotateCamera extends React.Component<Props, {}> {
   camera: BABYLON.ArcRotateCamera;
-  mouseSensitivity: number;
+  mouseSensitivityX: number;
+  mouseSensitivityY: number;
 
   componentDidMount() {
-    if (isNaN(parseFloat(this.props.mouseSensitivity.toString()))) {
-      this.mouseSensitivity = this.mouseSensitivity ? this.mouseSensitivity : 5;
+    let mouseSensitivityStart = 1500;
+    if (this.props.invertTouch) {
+      mouseSensitivityStart = mouseSensitivityStart * -1;
+    }
+    if (isNaN(parseFloat(this.props.mouseSensitivityX.toString()))) {
+      this.mouseSensitivityX = this.mouseSensitivityX ? this.mouseSensitivityX : 5;
     }
     else {
-      this.mouseSensitivity = parseFloat(this.props.mouseSensitivity.toString());
+      this.mouseSensitivityX = parseFloat(this.props.mouseSensitivityX.toString());
+    }
+    if (isNaN(parseFloat(this.props.mouseSensitivityY.toString()))) {
+      this.mouseSensitivityY = this.mouseSensitivityY ? this.mouseSensitivityY : 5;
+    }
+    else {
+      this.mouseSensitivityY = parseFloat(this.props.mouseSensitivityY.toString());
+    }
+    if (this.props.invertX) {
+      this.mouseSensitivityX = this.mouseSensitivityX * -1;
+    }
+    if (this.props.invertY) {
+      this.mouseSensitivityX = this.mouseSensitivityY * -1;
     }
     this.camera = new BABYLON.ArcRotateCamera("Camera", 1, 1, 90, this.props.target, this.props.scene);
     this.camera.checkCollisions = true;
     this.camera.inertia = 0;
-    this.camera.angularSensibilityX = 1500/this.mouseSensitivity;
-    this.camera.angularSensibilityY = 1500/this.mouseSensitivity;
+    this.camera.angularSensibilityX = mouseSensitivityStart/this.mouseSensitivityX;
+    this.camera.angularSensibilityY = mouseSensitivityStart/this.mouseSensitivityY;
     this.camera.lowerRadiusLimit = 50;
     this.camera.upperRadiusLimit = 1000;
     this.camera.radius = 800;
     this.camera.lowerBetaLimit = .1;
     this.camera.upperBetaLimit = Math.PI/2;
+    this.camera.attachControl(this.props.canvas, true);
 
     this.props.register(this.camera);
   }
@@ -39,14 +61,24 @@ class ArcRotateCamera extends React.Component<Props, {}> {
   }
 
   componentWillReceiveProps(props) {
-    if (isNaN(parseFloat(props.mouseSensitivity))) {
-      this.mouseSensitivity = this.mouseSensitivity ? this.mouseSensitivity : 5;
+    let mouseSensitivityStart = 1500;
+    if (this.props.invertTouch) {
+      mouseSensitivityStart = mouseSensitivityStart * -1;
+    }
+    if (isNaN(parseFloat(props.mouseSensitivityX))) {
+      this.mouseSensitivityX = this.mouseSensitivityX ? this.mouseSensitivityX : 5;
     }
     else {
-      this.mouseSensitivity = parseFloat(props.mouseSensitivity.toString());
+      this.mouseSensitivityX = parseFloat(props.mouseSensitivityX.toString());
     }
-    this.camera.angularSensibilityX = 1500/this.mouseSensitivity;
-    this.camera.angularSensibilityY = 1500/this.mouseSensitivity;
+    if (isNaN(parseFloat(props.mouseSensitivityY))) {
+      this.mouseSensitivityY = this.mouseSensitivityY ? this.mouseSensitivityY : 5;
+    }
+    else {
+      this.mouseSensitivityY = parseFloat(props.mouseSensitivityY.toString());
+    }
+    this.camera.angularSensibilityX = (props.invertX ? mouseSensitivityStart * -1 : mouseSensitivityStart)/this.mouseSensitivityX;
+    this.camera.angularSensibilityY = (props.invertY ? mouseSensitivityStart * -1 : mouseSensitivityStart)/this.mouseSensitivityY;
   }
 
   render() {

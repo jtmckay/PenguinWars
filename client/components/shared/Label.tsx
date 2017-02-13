@@ -5,10 +5,10 @@ interface Props {
   control: any;
 }
 
-class Settings extends React.Component<Props, {}> {
+class Label extends React.Component<Props, {}> {
   render() {
     return (
-      <div style={{ position: "relative", padding: 10 }}>
+      <div style={{ float: "left", padding: 5, width: "100%" }}>
         <div style={{ width: "50%", float: "left" }}>
           {this.props.label}
         </div>
@@ -20,4 +20,4 @@ class Settings extends React.Component<Props, {}> {
   }
 }
 
-export default Settings;
+export default Label;

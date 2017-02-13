@@ -73,6 +73,7 @@
 	const react_router_1 = __webpack_require__(178);
 	const routes_1 = __webpack_require__(233);
 	document.addEventListener('contextmenu', event => event.preventDefault());
+	//document.body.addEventListener('touchmove', event => event.preventDefault());
 	ReactDOM.render(React.createElement(react_router_1.Router, { history: react_router_1.browserHistory, routes: routes_1.default }), document.getElementById('app'));
 
 
@@ -651,7 +652,7 @@
 
 /***/ },
 /* 6 */
-[250, 7],
+[251, 7],
 /* 7 */
 /***/ function(module, exports) {
 
@@ -6349,7 +6350,7 @@
 
 /***/ },
 /* 50 */
-[250, 35],
+[251, 35],
 /* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -25919,12 +25920,10 @@
 	const react_router_1 = __webpack_require__(178);
 	const LayoutPage_1 = __webpack_require__(234);
 	const HomePage_1 = __webpack_require__(235);
-	const OtherPage_1 = __webpack_require__(249);
 	Object.defineProperty(exports, "__esModule", { value: true });
 	//* handles unkowns and the given level
 	exports.default = (React.createElement(react_router_1.Route, { path: "/", component: LayoutPage_1.default },
 	    React.createElement(react_router_1.IndexRoute, { component: HomePage_1.default }),
-	    React.createElement(react_router_1.Route, { path: "other", component: OtherPage_1.default }),
 	    React.createElement(react_router_1.Route, { path: "*", component: HomePage_1.default })));
 
 
@@ -25953,22 +25952,17 @@
 	"use strict";
 	const React = __webpack_require__(1);
 	const Canvas_1 = __webpack_require__(236);
-	const Settings_1 = __webpack_require__(247);
+	const Settings_1 = __webpack_require__(252);
+	const SettingsClass_1 = __webpack_require__(254);
+	const OnScreenKeyboard_1 = __webpack_require__(257);
 	class HomePage extends React.Component {
 	    constructor(props) {
 	        super(props);
 	        this.state = {
-	            showSettings: false,
+	            showSettings: true,
 	            animationRatio: 1,
-	            settings: {
-	                movementSpeed: 200,
-	                jumpSpeed: 400,
-	                mouseSensitivity: 5,
-	                stickyRightMouseClick: false
-	            }
+	            settings: new SettingsClass_1.default()
 	        };
-	        this.animationRatios = [];
-	        this.averageAnimationRatio = 1;
 	        this.keyDown = this.keyDown.bind(this);
 	        this.changeSetting = this.changeSetting.bind(this);
 	    }
@@ -25977,30 +25971,73 @@
 	            this.setState({ showSettings: !this.state.showSettings });
 	        }
 	    }
-	    changeSetting(settingName, settingValue) {
+	    changeSetting(groupName, settingName, settingValue) {
+	        let newGroup = {};
 	        let newSetting = {};
 	        newSetting[settingName] = settingValue;
-	        this.setState({ settings: Object.assign({}, this.state.settings, newSetting) });
+	        if (groupName == "keyboard") {
+	            if (settingValue == true) {
+	                if (settingName == 'q') {
+	                    newSetting['w'] = true;
+	                    newSetting['a'] = true;
+	                    newSetting['s'] = false;
+	                    newSetting['d'] = false;
+	                }
+	                if (settingName == 'e') {
+	                    newSetting['w'] = true;
+	                    newSetting['a'] = false;
+	                    newSetting['s'] = false;
+	                    newSetting['d'] = true;
+	                }
+	                if (settingName == 'z') {
+	                    newSetting['w'] = false;
+	                    newSetting['a'] = true;
+	                    newSetting['s'] = true;
+	                    newSetting['d'] = false;
+	                }
+	                if (settingName == 'c') {
+	                    newSetting['w'] = false;
+	                    newSetting['a'] = false;
+	                    newSetting['s'] = true;
+	                    newSetting['d'] = true;
+	                }
+	                if (settingName == 'w') {
+	                    newSetting['a'] = false;
+	                    newSetting['s'] = false;
+	                    newSetting['d'] = false;
+	                }
+	                if (settingName == 's') {
+	                    newSetting['w'] = false;
+	                    newSetting['a'] = false;
+	                    newSetting['d'] = false;
+	                }
+	                if (settingName == 'a') {
+	                    newSetting['d'] = false;
+	                    newSetting['w'] = false;
+	                    newSetting['s'] = false;
+	                }
+	                if (settingName == 'd') {
+	                    newSetting['a'] = false;
+	                    newSetting['w'] = false;
+	                    newSetting['s'] = false;
+	                }
+	                if (settingName == "stop") {
+	                    newSetting['w'] = false;
+	                    newSetting['a'] = false;
+	                    newSetting['s'] = false;
+	                    newSetting['d'] = false;
+	                }
+	            }
+	        }
+	        newGroup[groupName] = Object.assign({}, this.state.settings[groupName], newSetting);
+	        this.setState({ settings: Object.assign({}, this.state.settings, newGroup) });
 	    }
 	    render() {
 	        return (React.createElement("div", { onKeyDown: this.keyDown },
-	            React.createElement(Settings_1.default, { framerate: this.state.framerate, animationRatio: this.state.animationRatio, settings: this.state.settings, changeSetting: this.changeSetting, showSettings: this.state.showSettings }),
-	            React.createElement(Canvas_1.default, { settings: this.state.settings, animationRatio: this.state.animationRatio, setAnimationRatio: (ratio) => {
-	                    this.animationRatios.push(ratio);
-	                    if (this.animationRatios.length >= 100) {
-	                        this.averageAnimationRatio = this.animationRatios.reduce((a, b) => { return a + b; }) / this.animationRatios.length;
-	                        this.setState({ animationRatio: this.averageAnimationRatio });
-	                        this.animationRatios.length = 0;
-	                    }
-	                    else {
-	                        if (ratio < this.state.animationRatio && ratio > this.state.animationRatio + 1) {
-	                            this.setState({ animationRatio: ratio });
-	                        }
-	                        else {
-	                            this.setState({ animationRatio: this.averageAnimationRatio });
-	                        }
-	                    }
-	                }, setFramerate: (fps) => this.setState({ framerate: fps }) })));
+	            React.createElement(OnScreenKeyboard_1.default, { settings: this.state.settings, changeSetting: this.changeSetting }),
+	            React.createElement(Settings_1.default, { framerate: this.state.framerate, animationRatio: this.state.animationRatio, settings: this.state.settings, toggleShowSettings: () => this.setState({ showSettings: !this.state.showSettings }), changeSetting: this.changeSetting, showSettings: this.state.showSettings }),
+	            React.createElement(Canvas_1.default, { settings: this.state.settings, invertMouse: () => this.setState({ settings: Object.assign({}, this.state.settings, { mouse: Object.assign({}, this.state.settings.mouse, { mouseSensitivityX: -this.state.settings.mouse.mouseSensitivityX,
+	                            mouseSensitivityY: -this.state.settings.mouse.mouseSensitivityY }) }) }), setFramerate: (fps, animationRatio) => this.setState({ framerate: fps, animationRatio: animationRatio }) })));
 	    }
 	}
 	Object.defineProperty(exports, "__esModule", { value: true });
@@ -26014,13 +26051,14 @@
 	"use strict";
 	const React = __webpack_require__(1);
 	const BABYLON = __webpack_require__(237);
-	const Light_1 = __webpack_require__(238);
-	const ArcRotateCamera_1 = __webpack_require__(239);
-	const Ground_1 = __webpack_require__(240);
-	const Character_1 = __webpack_require__(241);
+	const Gravitator_1 = __webpack_require__(238);
+	const Light_1 = __webpack_require__(239);
+	const ArcRotateCamera_1 = __webpack_require__(240);
+	const Ground_1 = __webpack_require__(241);
+	const Character_1 = __webpack_require__(242);
 	const ParticleSystem_1 = __webpack_require__(244);
 	const Sphere_1 = __webpack_require__(245);
-	const applyGravity_1 = __webpack_require__(243);
+	const Plane_1 = __webpack_require__(246);
 	class Canvas extends React.Component {
 	    constructor(props) {
 	        super(props);
@@ -26029,6 +26067,7 @@
 	            position: new BABYLON.Vector3(-30, 0, 0)
 	        };
 	        this.WebGLSupported = BABYLON.Engine.isSupported();
+	        this.gravitator = new Gravitator_1.default();
 	        this.pointerLockCallback = this.pointerLockCallback.bind(this);
 	        this.lockPointer = this.lockPointer.bind(this);
 	        this.unlockPointer = this.unlockPointer.bind(this);
@@ -26058,16 +26097,20 @@
 	                    });
 	                  }.bind(this);
 	            */
+	            let addCharacterTask = this.assetsManager.addMeshTask("add character", "test", "babylonjs/", "skull.babylon");
+	            addCharacterTask.onSuccess = function (task) {
+	                this.skullMesh = task.loadedMeshes[0];
+	            }.bind(this);
 	            let addSkullTask = this.assetsManager.addMeshTask("add character", "test", "babylonjs/", "skull.babylon");
 	            addSkullTask.onSuccess = function (task) {
-	                this.skullMesh = task.loadedMeshes[0];
-	                this.car = Object.assign({}, task.loadedMeshes[0]);
-	                this.car.position = new BABYLON.Vector3(5, 0, 0);
-	                this.car.ellipsoid = new BABYLON.Vector3(4, 4, 4);
-	                let car = this.car.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 10, friction: 1 });
+	                this.car = task.loadedMeshes[0];
+	                this.car.position = new BABYLON.Vector3(150, 200, 0);
+	                let car = this.car.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 100, friction: 100 });
+	                //this.car.scaling = new BABYLON.Vector3(5, 5, 5);a
 	                this.state.scene.registerBeforeRender(function () {
-	                    applyGravity_1.default(this.car, this.state.scene.getAnimationRatio());
-	                    car.angularVelocity.scaleEqual(.95);
+	                    this.gravitator.applyPhysics(car);
+	                    this.gravitator.applyGravity(this.car);
+	                    this.gravitator.applyGroundConstraints(car, this.car, 30);
 	                    //car.linearVelocity.scaleEqual(.9);
 	                }.bind(this));
 	            }.bind(this);
@@ -26112,26 +26155,27 @@
 	    pointerLockCallback(event) {
 	        if (document.pointerLockElement == this.canvas) {
 	            this.pointerLocked = true;
-	            this.camera.attachControl(this.canvas, true);
 	        }
 	        else {
 	            this.pointerLocked = false;
-	            this.camera.detachControl(this.canvas);
 	        }
 	    }
 	    mouseDown(event) {
-	        if (!this.props.settings.stickyRightMouseClick && event.nativeEvent.which == 3) {
+	        if (event.nativeEvent.which == 1) {
+	            this.camera.detachControl(this.canvas);
+	        }
+	        if (!this.props.settings.mouse.stickyRightMouseClick && event.nativeEvent.which == 3) {
 	            this.lockPointer();
 	        }
-	        else if (this.props.settings.stickyRightMouseClick && event.nativeEvent.which == 3 && !this.pointerLocked) {
+	        else if (this.props.settings.mouse.stickyRightMouseClick && event.nativeEvent.which == 3 && !this.pointerLocked) {
 	            this.lockPointer();
 	        }
-	        else if (this.props.settings.stickyRightMouseClick && event.nativeEvent.which == 3 && this.pointerLocked) {
+	        else if (this.props.settings.mouse.stickyRightMouseClick && event.nativeEvent.which == 3 && this.pointerLocked) {
 	            this.unlockPointer();
 	        }
 	    }
 	    mouseUp(event) {
-	        if (!this.props.settings.stickyRightMouseClick && event.nativeEvent.which == 3) {
+	        if (!this.props.settings.mouse.stickyRightMouseClick && event.nativeEvent.which == 3) {
 	            this.unlockPointer();
 	        }
 	    }
@@ -26142,10 +26186,18 @@
 	        }
 	    }
 	    lockPointer() {
+	        if (this.props.settings.mouse.invertTouch) {
+	            this.props.invertMouse();
+	        }
 	        this.canvas.requestPointerLock();
+	        this.camera.attachControl(this.canvas, true);
 	    }
 	    unlockPointer() {
+	        if (this.props.settings.mouse.invertTouch) {
+	            this.props.invertMouse();
+	        }
 	        document.exitPointerLock();
+	        this.camera.detachControl(this.canvas);
 	    }
 	    mouseMoved(event) {
 	        //event.target.innerHTML = "Position: " + event.clientX + ", " + event.clientY;
@@ -26165,8 +26217,7 @@
 	        scene.fogDensity = .0003;
 	        //runs every frame
 	        scene.registerBeforeRender(function () {
-	            this.props.setFramerate(this.engine.getFps(), this.engine.getDeltaTime());
-	            this.props.setAnimationRatio(scene.getAnimationRatio());
+	            this.props.setFramerate(this.engine.getFps(), this.gravitator.appliedAnimationRatio);
 	            var pickResult = scene.pick(scene.pointerX, scene.pointerY, function (mesh) {
 	                return mesh.name == "ground";
 	            });
@@ -26174,38 +26225,133 @@
 	                this.particleSystem.emitter.position = pickResult.pickedPoint;
 	            }
 	        }.bind(this));
+	        this.gravitator.registerGravitator(scene);
 	        return scene;
 	    }
 	    render() {
 	        if (this.state.scene && this.assetsLoaded) {
-	            return (React.createElement("canvas", { id: "renderCanvas", style: { width: "100vw", height: "100vh" }, onKeyDown: this.keyDown, onMouseDown: this.mouseDown, onMouseUp: this.mouseUp, onWheel: this.mouseWheel },
+	            return (React.createElement("canvas", { id: "renderCanvas", style: { width: "100vw", height: "100vh" }, onKeyDown: this.keyDown, onMouseDown: this.mouseDown, onMouseUp: this.mouseUp, onTouchStart: () => this.camera.attachControl(this.canvas, true), onWheel: this.mouseWheel },
 	                React.createElement(Light_1.default, { scene: this.state.scene }),
-	                React.createElement(ArcRotateCamera_1.default, { scene: this.state.scene, register: (camera) => this.camera = camera, canvas: this.canvas, target: BABYLON.Vector3.Zero(), mouseSensitivity: this.props.settings.mouseSensitivity }),
-	                React.createElement(Ground_1.default, { scene: this.state.scene, register: ground => this.ground = ground, material: (function () {
+	                React.createElement(ArcRotateCamera_1.default, { scene: this.state.scene, register: (camera) => this.camera = camera, canvas: this.canvas, target: BABYLON.Vector3.Zero(), invertX: this.props.settings.mouse.invertX, invertY: this.props.settings.mouse.invertY, invertTouch: this.props.settings.mouse.invertTouch, mouseSensitivityX: this.props.settings.mouse.mouseSensitivityX, mouseSensitivityY: this.props.settings.mouse.mouseSensitivityY }),
+	                React.createElement(Ground_1.default, { scene: this.state.scene, register: ground => this.gravitator.ground = ground, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
 	                        return material;
 	                    }.bind(this))() }),
-	                React.createElement(Character_1.default, { scene: this.state.scene, register: character => this.character = character, mesh: this.skullMesh, camera: this.camera, ground: this.ground, animationRatio: this.props.animationRatio, movementSpeed: this.props.settings.movementSpeed, jumpSpeed: this.props.settings.jumpSpeed }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.7, .3, .3);
+	                        return material;
+	                    }.bind(this))(), size: 4000, position: new BABYLON.Vector3(4000, 0, 0), rotation: new BABYLON.Vector3(0, Math.PI / 2, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
+	                        return material;
+	                    }.bind(this))(), size: 4000, position: new BABYLON.Vector3(-4000, 0, 0), rotation: new BABYLON.Vector3(0, -Math.PI / 2, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.3, .3, .7);
+	                        return material;
+	                    }.bind(this))(), size: 4000, position: new BABYLON.Vector3(0, 0, -4000), rotation: new BABYLON.Vector3(Math.PI, 0, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.7, .3, .7);
+	                        return material;
+	                    }.bind(this))(), size: 4000, position: new BABYLON.Vector3(0, 0, 4000), rotation: new BABYLON.Vector3(0, 0, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.7, .3, .3);
+	                        return material;
+	                    }.bind(this))(), size: 2828.427125, position: new BABYLON.Vector3(3000, 0, 3000), rotation: new BABYLON.Vector3(0, Math.PI / 4, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
+	                        return material;
+	                    }.bind(this))(), size: 2828.427125, position: new BABYLON.Vector3(3000, 0, -3000), rotation: new BABYLON.Vector3(0, Math.PI - Math.PI / 4, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.3, .3, .7);
+	                        return material;
+	                    }.bind(this))(), size: 2828.427125, position: new BABYLON.Vector3(-3000, 0, -3000), rotation: new BABYLON.Vector3(0, Math.PI / 4 + Math.PI, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.7, .3, .7);
+	                        return material;
+	                    }.bind(this))(), size: 2828.427125, position: new BABYLON.Vector3(-3000, 0, 3000), rotation: new BABYLON.Vector3(0, -Math.PI / 4, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.7, .3, .3);
+	                        material.alpha = .3;
+	                        return material;
+	                    }.bind(this))(), size: 4000, position: new BABYLON.Vector3(4000, 0, 0), rotation: new BABYLON.Vector3(0, Math.PI / 2 + Math.PI, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
+	                        material.alpha = .3;
+	                        return material;
+	                    }.bind(this))(), size: 4000, position: new BABYLON.Vector3(-4000, 0, 0), rotation: new BABYLON.Vector3(0, Math.PI - Math.PI / 2, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.3, .3, .7);
+	                        material.alpha = .3;
+	                        return material;
+	                    }.bind(this))(), size: 4000, position: new BABYLON.Vector3(0, 0, -4000), rotation: new BABYLON.Vector3(Math.PI, Math.PI, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.7, .3, .7);
+	                        material.alpha = .3;
+	                        return material;
+	                    }.bind(this))(), size: 4000, position: new BABYLON.Vector3(0, 0, 4000), rotation: new BABYLON.Vector3(0, Math.PI, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.7, .3, .3);
+	                        material.alpha = .3;
+	                        return material;
+	                    }.bind(this))(), size: 2828.427125, position: new BABYLON.Vector3(3000, 0, 3000), rotation: new BABYLON.Vector3(0, Math.PI + Math.PI / 4, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
+	                        material.alpha = .3;
+	                        return material;
+	                    }.bind(this))(), size: 2828.427125, position: new BABYLON.Vector3(3000, 0, -3000), rotation: new BABYLON.Vector3(0, -Math.PI / 4, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.3, .3, .7);
+	                        material.alpha = .3;
+	                        return material;
+	                    }.bind(this))(), size: 2828.427125, position: new BABYLON.Vector3(-3000, 0, -3000), rotation: new BABYLON.Vector3(0, Math.PI / 4, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.7, .3, .7);
+	                        material.alpha = .3;
+	                        return material;
+	                    }.bind(this))(), size: 2828.427125, position: new BABYLON.Vector3(-3000, 0, 3000), rotation: new BABYLON.Vector3(0, Math.PI - Math.PI / 4, 0) }),
+	                React.createElement(Plane_1.default, { scene: this.state.scene, register: plane => this.plane = plane, material: (function () {
+	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	                        material.diffuseColor = new BABYLON.Color3(.3, .3, .3);
+	                        material.alpha = .3;
+	                        return material;
+	                    }.bind(this))(), size: 8000, position: new BABYLON.Vector3(0, 1400, 0), rotation: new BABYLON.Vector3(Math.PI / 2, 0, 0) }),
+	                React.createElement(Character_1.default, { gravitator: this.gravitator, scene: this.state.scene, register: character => this.character = character, mesh: this.skullMesh, camera: this.camera, keyboard: this.props.settings.keyboard, movementSpeed: this.props.settings.movementSpeed, jumpSpeed: this.props.settings.jumpSpeed }),
 	                React.createElement(ParticleSystem_1.default, { scene: this.state.scene, register: particleSystem => this.particleSystem = particleSystem, position: new BABYLON.Vector3(0, -10, 0), color1: new BABYLON.Color4(.1, .2, .8, 1), color2: new BABYLON.Color4(.2, .3, 1, 1), texture: new BABYLON.Texture("textures/flare.png", this.state.scene) }),
 	                React.createElement(ParticleSystem_1.default, { scene: this.state.scene, register: particleSystem => this.particleSystem2 = particleSystem, position: new BABYLON.Vector3(0, -10, 0), color1: new BABYLON.Color4(.8, .2, .1, 1), color2: new BABYLON.Color4(1, .3, .2, 1), texture: new BABYLON.Texture("textures/flare.png", this.state.scene) }),
-	                React.createElement(Sphere_1.default, { scene: this.state.scene, animationRatio: this.props.animationRatio, segments: 20, diameter: 60, mass: 60, material: (function () {
+	                React.createElement(Sphere_1.default, { scene: this.state.scene, gravitator: this.gravitator, animationRatio: this.gravitator.appliedAnimationRatio, segments: 20, diameter: 20, mass: 60, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.emissiveTexture = new BABYLON.Texture("textures/penguin.png", this.state.scene);
 	                        return material;
-	                    }.bind(this))(), position: new BABYLON.Vector3(0, 0, 0) }),
-	                React.createElement(Sphere_1.default, { scene: this.state.scene, animationRatio: this.props.animationRatio, hook: object => this.hook.Sphere = object, segments: 20, diameter: 70, mass: 70, material: (function () {
+	                    }.bind(this))(), position: new BABYLON.Vector3(0, 10, 0) }),
+	                React.createElement(Sphere_1.default, { scene: this.state.scene, gravitator: this.gravitator, animationRatio: this.gravitator.appliedAnimationRatio, hook: object => this.hook.Sphere = object, segments: 20, diameter: 70, mass: 70, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.diffuseColor = new BABYLON.Color3(.5, 1, .5);
 	                        material.specularColor = new BABYLON.Color3(0, 1, 0);
 	                        material.specularPower = 32;
 	                        return material;
 	                    }.bind(this))(), position: this.state.position }),
-	                React.createElement(Sphere_1.default, { scene: this.state.scene, animationRatio: this.props.animationRatio, segments: 20, diameter: 80, mass: 80, material: (function () {
+	                React.createElement(Sphere_1.default, { scene: this.state.scene, gravitator: this.gravitator, animationRatio: this.gravitator.appliedAnimationRatio, segments: 20, diameter: 80, mass: 80, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.diffuseColor = new BABYLON.Color3(1.0, 0.2, 0.7);
 	                        return material;
-	                    }.bind(this))(), position: new BABYLON.Vector3(-50, 0, 0) })));
+	                    }.bind(this))(), position: new BABYLON.Vector3(-50, 5, 0) })));
 	        }
 	        else {
 	            if (this.WebGLSupported) {
@@ -26269,6 +26415,100 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
+	const BABYLON = __webpack_require__(237);
+	class Gravitator {
+	    constructor() {
+	        this.previousAnimationRatio = 1;
+	        this.appliedAnimationRatio = 1;
+	        this.animationRatios = [];
+	        this.averageAnimationRatio = 1;
+	        this.target = BABYLON.Vector3.Zero();
+	    }
+	    applyPhysics(physicalBody) {
+	        physicalBody.linearVelocity.scaleEqual(this.previousAnimationRatio / this.appliedAnimationRatio);
+	        physicalBody.angularVelocity.scaleEqual(this.previousAnimationRatio / this.appliedAnimationRatio);
+	        physicalBody.mass = physicalBody.mass * this.appliedAnimationRatio;
+	        physicalBody.angularVelocity.scaleEqual(.98);
+	        physicalBody.linearVelocity.scaleEqual(.98);
+	    }
+	    applyPhysicsZeroDeterioration(physicalBody) {
+	        physicalBody.linearVelocity.scaleEqual(this.previousAnimationRatio / this.appliedAnimationRatio);
+	        physicalBody.angularVelocity.scaleEqual(this.previousAnimationRatio / this.appliedAnimationRatio);
+	        physicalBody.mass = physicalBody.mass * this.appliedAnimationRatio;
+	    }
+	    applyGravity(mesh) {
+	        mesh.applyImpulse(new BABYLON.Vector3(0, -9.81 * this.appliedAnimationRatio * this.appliedAnimationRatio, 0), mesh.position);
+	    }
+	    pullWithOffset(physicalBody, mesh, stickToGround, height, xOffset = 0, zOffset = 0) {
+	        var pickInfo = this.ground.intersects(new BABYLON.Ray(new BABYLON.Vector3(mesh.position.x + xOffset, mesh.position.y - height, mesh.position.z + zOffset), new BABYLON.Vector3(0, 1, 0)));
+	        if (pickInfo.hit) {
+	            //If the ground is within 1 of the bottom of the character (sphere diameter of 60)
+	            if (mesh.position.y - height < pickInfo.pickedPoint.y + 20) {
+	                this.target.x = 0;
+	                this.target.z = 0;
+	                if (stickToGround) {
+	                    this.target.y = -physicalBody.linearVelocity.y;
+	                }
+	                if (mesh.position.y - height < pickInfo.pickedPoint.y - 1) {
+	                    this.target.y += (mesh.position.y - height - pickInfo.pickedPoint.y) *
+	                        (mesh.position.y - height - pickInfo.pickedPoint.y);
+	                }
+	                if (stickToGround && mesh.position.y - height > pickInfo.pickedPoint.y + 1) {
+	                    this.target.y -= (mesh.position.y - height - pickInfo.pickedPoint.y) *
+	                        (mesh.position.y - height - pickInfo.pickedPoint.y);
+	                }
+	                mesh.applyImpulse(this.target, new BABYLON.Vector3(mesh.position.x, mesh.position.y, mesh.position.z));
+	                return true;
+	            }
+	        }
+	        return false;
+	    }
+	    applyGroundConstraints(physicalBody, mesh, height = 5, stickToGround = true) {
+	        if (this.ground) {
+	            return this.pullWithOffset(physicalBody, mesh, stickToGround, height);
+	        }
+	        return false;
+	    }
+	    applyGroundConstraintsWithWidth(physicalBody, mesh, height = 5, width = 5, stickToGround = true) {
+	        if (this.ground) {
+	            return this.pullWithOffset(physicalBody, mesh, stickToGround, height, width / 2, width / 2) ||
+	                this.pullWithOffset(physicalBody, mesh, stickToGround, height, width / 2, -width / 2) ||
+	                this.pullWithOffset(physicalBody, mesh, stickToGround, height, -width / 2, width / 2) ||
+	                this.pullWithOffset(physicalBody, mesh, stickToGround, height, -width / 2, -width / 2);
+	        }
+	        return false;
+	    }
+	    registerGravitator(scene) {
+	        scene.registerBeforeRender(function () {
+	            this.previousAnimationRatio = this.appliedAnimationRatio;
+	            this.instantAnimationRatio = scene.getAnimationRatio();
+	            this.animationRatios.push(this.instantAnimationRatio);
+	            if (this.animationRatios.length >= 150) {
+	                this.averageAnimationRatio = this.animationRatios.reduce((a, b) => { return a + b; }) / this.animationRatios.length;
+	                this.appliedAnimationRatio = this.averageAnimationRatio;
+	                this.animationRatios.length = 0;
+	            }
+	            else {
+	                if (this.instantAnimationRatio < this.appliedAnimationRatio && this.instantAnimationRatio > this.appliedAnimationRatio + 1) {
+	                    this.appliedAnimationRatio = this.instantAnimationRatio;
+	                }
+	                else {
+	                    this.appliedAnimationRatio = this.averageAnimationRatio;
+	                }
+	            }
+	        }.bind(this));
+	    }
+	}
+	;
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Gravitator;
+
+
+/***/ },
+/* 239 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
 	const React = __webpack_require__(1);
 	const BABYLON = __webpack_require__(237);
 	class Light extends React.Component {
@@ -26290,7 +26530,7 @@
 
 
 /***/ },
-/* 239 */
+/* 240 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26298,36 +26538,63 @@
 	const BABYLON = __webpack_require__(237);
 	class ArcRotateCamera extends React.Component {
 	    componentDidMount() {
-	        if (isNaN(parseFloat(this.props.mouseSensitivity.toString()))) {
-	            this.mouseSensitivity = this.mouseSensitivity ? this.mouseSensitivity : 5;
+	        let mouseSensitivityStart = 1500;
+	        if (this.props.invertTouch) {
+	            mouseSensitivityStart = mouseSensitivityStart * -1;
+	        }
+	        if (isNaN(parseFloat(this.props.mouseSensitivityX.toString()))) {
+	            this.mouseSensitivityX = this.mouseSensitivityX ? this.mouseSensitivityX : 5;
 	        }
 	        else {
-	            this.mouseSensitivity = parseFloat(this.props.mouseSensitivity.toString());
+	            this.mouseSensitivityX = parseFloat(this.props.mouseSensitivityX.toString());
+	        }
+	        if (isNaN(parseFloat(this.props.mouseSensitivityY.toString()))) {
+	            this.mouseSensitivityY = this.mouseSensitivityY ? this.mouseSensitivityY : 5;
+	        }
+	        else {
+	            this.mouseSensitivityY = parseFloat(this.props.mouseSensitivityY.toString());
+	        }
+	        if (this.props.invertX) {
+	            this.mouseSensitivityX = this.mouseSensitivityX * -1;
+	        }
+	        if (this.props.invertY) {
+	            this.mouseSensitivityX = this.mouseSensitivityY * -1;
 	        }
 	        this.camera = new BABYLON.ArcRotateCamera("Camera", 1, 1, 90, this.props.target, this.props.scene);
 	        this.camera.checkCollisions = true;
 	        this.camera.inertia = 0;
-	        this.camera.angularSensibilityX = 1500 / this.mouseSensitivity;
-	        this.camera.angularSensibilityY = 1500 / this.mouseSensitivity;
+	        this.camera.angularSensibilityX = mouseSensitivityStart / this.mouseSensitivityX;
+	        this.camera.angularSensibilityY = mouseSensitivityStart / this.mouseSensitivityY;
 	        this.camera.lowerRadiusLimit = 50;
 	        this.camera.upperRadiusLimit = 1000;
 	        this.camera.radius = 800;
 	        this.camera.lowerBetaLimit = .1;
 	        this.camera.upperBetaLimit = Math.PI / 2;
+	        this.camera.attachControl(this.props.canvas, true);
 	        this.props.register(this.camera);
 	    }
 	    componentWillUnmount() {
 	        this.camera.dispose();
 	    }
 	    componentWillReceiveProps(props) {
-	        if (isNaN(parseFloat(props.mouseSensitivity))) {
-	            this.mouseSensitivity = this.mouseSensitivity ? this.mouseSensitivity : 5;
+	        let mouseSensitivityStart = 1500;
+	        if (this.props.invertTouch) {
+	            mouseSensitivityStart = mouseSensitivityStart * -1;
+	        }
+	        if (isNaN(parseFloat(props.mouseSensitivityX))) {
+	            this.mouseSensitivityX = this.mouseSensitivityX ? this.mouseSensitivityX : 5;
 	        }
 	        else {
-	            this.mouseSensitivity = parseFloat(props.mouseSensitivity.toString());
+	            this.mouseSensitivityX = parseFloat(props.mouseSensitivityX.toString());
 	        }
-	        this.camera.angularSensibilityX = 1500 / this.mouseSensitivity;
-	        this.camera.angularSensibilityY = 1500 / this.mouseSensitivity;
+	        if (isNaN(parseFloat(props.mouseSensitivityY))) {
+	            this.mouseSensitivityY = this.mouseSensitivityY ? this.mouseSensitivityY : 5;
+	        }
+	        else {
+	            this.mouseSensitivityY = parseFloat(props.mouseSensitivityY.toString());
+	        }
+	        this.camera.angularSensibilityX = (props.invertX ? mouseSensitivityStart * -1 : mouseSensitivityStart) / this.mouseSensitivityX;
+	        this.camera.angularSensibilityY = (props.invertY ? mouseSensitivityStart * -1 : mouseSensitivityStart) / this.mouseSensitivityY;
 	    }
 	    render() {
 	        return null;
@@ -26338,7 +26605,7 @@
 
 
 /***/ },
-/* 240 */
+/* 241 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26346,8 +26613,8 @@
 	const BABYLON = __webpack_require__(237);
 	class Ground extends React.Component {
 	    componentDidMount() {
-	        this.ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/A1.jpg", 4000, 4000, 500, -500, 500, this.props.scene);
-	        this.ground.position.y = -30;
+	        this.ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/A1.jpg", 8000, 8000, 50, -500, 500, this.props.scene);
+	        this.ground.position.y = -100;
 	        this.ground.material = this.props.material;
 	        this.ground.setPhysicsState(BABYLON.PhysicsEngine.MeshImpostor, { mass: 0 });
 	        this.props.register(this.ground);
@@ -26365,15 +26632,14 @@
 
 
 /***/ },
-/* 241 */
+/* 242 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	const React = __webpack_require__(1);
 	const BABYLON = __webpack_require__(237);
-	const degreesToRadians_1 = __webpack_require__(242);
-	const applyGravity_1 = __webpack_require__(243);
-	class Ground extends React.Component {
+	const degreesToRadians_1 = __webpack_require__(243);
+	class Character extends React.Component {
 	    componentDidMount() {
 	        this.load();
 	    }
@@ -26382,7 +26648,7 @@
 	        this.characterShell.dispose();
 	    }
 	    load() {
-	        if (this.props.camera && this.props.ground) {
+	        if (this.props.camera && this.props.gravitator.ground) {
 	            this.characterMesh = this.props.mesh;
 	            this.props.register(this.characterMesh);
 	            this.characterShell = BABYLON.Mesh.CreateSphere("Character", 2, 60, this.props.scene, true);
@@ -26445,26 +26711,27 @@
 	                    shift = false;
 	                }
 	            }));
-	            let currentAnimationRatio = 1;
 	            this.props.scene.registerBeforeRender(function () {
 	                this.props.camera.target = this.characterMesh.position;
-	                shell.linearVelocity.scaleEqual(currentAnimationRatio / this.props.animationRatio);
-	                shell.angularVelocity.scaleEqual(currentAnimationRatio / this.props.animationRatio);
-	                shell.mass = shell.mass * this.props.animationRatio;
-	                if (!onGround) {
-	                    applyGravity_1.default(this.characterShell, this.props.animationRatio);
-	                }
-	                currentAnimationRatio = this.props.animationRatio;
+	                this.props.gravitator.applyPhysicsZeroDeterioration(shell);
+	                this.props.gravitator.applyGravity(this.characterShell);
+	                onGround = this.props.gravitator.applyGroundConstraints(shell, this.characterShell, 30, canJump);
+	                //everything
 	                //Stop rotation of the character in order to apply friction to stop the character without impulse
-	                if (!w && !a && !s && !d) {
+	                if (!w && !a && !s && !d
+	                    && !this.props.keyboard.w
+	                    && !this.props.keyboard.a
+	                    && !this.props.keyboard.s
+	                    && !this.props.keyboard.d) {
 	                    shell.angularVelocity.scaleEqual(0);
+	                    shell.linearVelocity.scaleEqual(.99);
 	                }
 	                else {
 	                    shell.linearVelocity.scaleEqual(.99);
 	                    shell.angularVelocity.scaleEqual(.99);
 	                }
 	                //Adjust speed for framerate
-	                let localSpeed = this.props.movementSpeed * this.props.animationRatio;
+	                let localSpeed = this.props.movementSpeed * this.props.gravitator.appliedAnimationRatio;
 	                //Y-axis point to calculate the angle of the camera
 	                let vector1 = new BABYLON.Vector2(0, 1);
 	                //Camera position relative to the object
@@ -26472,56 +26739,40 @@
 	                let angle = BABYLON.Angle.BetweenTwoPoints(vector1, vector2);
 	                let current = shell.linearVelocity;
 	                let target = new BABYLON.Vector3(0, 0, 0);
-	                //Calculation to determine if the character is on the ground
-	                var pickInfo = this.props.ground.intersects(new BABYLON.Ray(new BABYLON.Vector3(shell.position.x, shell.position.y - 20, shell.position.z), new BABYLON.Vector3(0, 1, 0)));
-	                if (pickInfo.hit) {
-	                    //If the ground is within 1 of the bottom of the character (sphere diameter of 60)
-	                    if (canJump) {
-	                        target.y = -current.y;
-	                    }
-	                    onGround = true;
-	                    if (canJump && pickInfo.pickedPoint.y > shell.position.y - 29) {
-	                        target.y += (pickInfo.pickedPoint.y - (shell.position.y - 30)) * (pickInfo.pickedPoint.y - (shell.position.y - 30));
-	                    }
-	                    if (canJump && pickInfo.pickedPoint.y < shell.position.y - 31) {
-	                        target.y -= (pickInfo.pickedPoint.y - (shell.position.y - 30)) * (pickInfo.pickedPoint.y - (shell.position.y - 30));
-	                    }
-	                }
-	                else {
-	                    onGround = false;
-	                }
 	                //Jump before modifying the localSpeed to compensate for shift and multiple directions
-	                if (space && canJump && onGround) {
-	                    this.characterShell.applyImpulse(new BABYLON.Vector3(0, this.props.jumpSpeed * this.props.animationRatio, 0), this.characterMesh.position);
+	                if ((space || this.props.keyboard.space) && canJump && onGround) {
+	                    this.characterShell.applyImpulse(new BABYLON.Vector3(0, this.props.jumpSpeed * this.props.gravitator.appliedAnimationRatio, 0), this.characterMesh.position);
 	                    canJump = false;
 	                    setTimeout(function () {
 	                        canJump = true;
 	                    }, 150);
 	                }
-	                if ((w && !s || s && !w) &&
-	                    (d && !a || a && !d)) {
+	                if (((w || this.props.keyboard.w) && (!s && !this.props.keyboard.s) ||
+	                    (s || this.props.keyboard.s) && (!w && !this.props.keyboard.w)) &&
+	                    ((d || this.props.keyboard.d) && (!a && !this.props.keyboard.a) ||
+	                        (a || this.props.keyboard.a) && (!d || !this.props.keyboard.d))) {
 	                    localSpeed = localSpeed * Math.cos(degreesToRadians_1.default(45));
 	                }
 	                if (shift) {
 	                    localSpeed = localSpeed / 20;
 	                }
-	                if (w) {
+	                if (w || this.props.keyboard.w) {
 	                    target.x += localSpeed * Math.sin(angle.radians() + degreesToRadians_1.default(90));
 	                    target.z -= localSpeed * Math.cos(angle.radians() + degreesToRadians_1.default(90));
 	                }
-	                if (a) {
+	                if (a || this.props.keyboard.a) {
 	                    target.x -= localSpeed * Math.sin(angle.radians());
 	                    target.z += localSpeed * Math.cos(angle.radians());
 	                }
-	                if (s) {
+	                if (s || this.props.keyboard.s) {
 	                    target.x += localSpeed * Math.sin(angle.radians() - degreesToRadians_1.default(90));
 	                    target.z -= localSpeed * Math.cos(angle.radians() - degreesToRadians_1.default(90));
 	                }
-	                if (d) {
+	                if (d || this.props.keyboard.d) {
 	                    target.x += localSpeed * Math.sin(angle.radians());
 	                    target.z -= localSpeed * Math.cos(angle.radians());
 	                }
-	                if (shift) {
+	                if (shift || this.props.keyboard.shift) {
 	                    this.characterShell.applyImpulse(target, this.characterMesh.position);
 	                }
 	                else {
@@ -26542,29 +26793,16 @@
 	    }
 	}
 	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = Ground;
+	exports.default = Character;
 
 
 /***/ },
-/* 242 */
+/* 243 */
 /***/ function(module, exports) {
 
 	"use strict";
 	function default_1(degrees) {
 	    return degrees * Math.PI / 180;
-	}
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = default_1;
-
-
-/***/ },
-/* 243 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	const BABYLON = __webpack_require__(237);
-	function default_1(physicsBody, scale) {
-	    physicsBody.applyImpulse(new BABYLON.Vector3(0, -9.81 * scale * scale, 0), physicsBody.position);
 	}
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = default_1;
@@ -26631,7 +26869,6 @@
 	"use strict";
 	const React = __webpack_require__(1);
 	const BABYLON = __webpack_require__(237);
-	const applyGravity_1 = __webpack_require__(243);
 	class Sphere extends React.Component {
 	    componentWillReceiveProps(props) {
 	        if (this.props.hook) {
@@ -26668,8 +26905,9 @@
 	        this.sphere.animations.push(animationBox);
 	        //this.props.scene.beginAnimation(this.sphere, 0, 100, true);
 	        this.props.scene.registerBeforeRender(function () {
-	            applyGravity_1.default(this.sphere, this.props.animationRatio);
-	            physicalSphere.angularVelocity.scaleEqual(.92);
+	            this.props.gravitator.applyPhysics(physicalSphere);
+	            this.props.gravitator.applyGravity(this.sphere);
+	            this.props.gravitator.applyGroundConstraints(physicalSphere, this.sphere, this.props.diameter / 2);
 	        }.bind(this));
 	    }
 	    componentWillUnmount() {
@@ -26685,81 +26923,39 @@
 
 
 /***/ },
-/* 246 */,
-/* 247 */
+/* 246 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	const React = __webpack_require__(1);
-	const Label_1 = __webpack_require__(248);
-	class Settings extends React.Component {
+	const BABYLON = __webpack_require__(237);
+	class Ground extends React.Component {
+	    componentDidMount() {
+	        this.ground = BABYLON.Mesh.CreatePlane("plane", this.props.size, this.props.scene);
+	        this.ground.position = this.props.position;
+	        this.ground.material = this.props.material;
+	        this.ground.rotation = this.props.rotation;
+	        this.ground.setPhysicsState(BABYLON.PhysicsEngine.PlaneImpostor, { mass: 0 });
+	        this.props.register(this.ground);
+	    }
+	    componentWillUnmount() {
+	        this.ground.dispose();
+	        this.props.material.dispose();
+	    }
 	    render() {
-	        if (this.props.showSettings) {
-	            return (React.createElement("div", { style: { height: "100%", width: 400, position: "absolute", right: 0, backgroundColor: "grey", opacity: .9 } },
-	                React.createElement("div", null,
-	                    React.createElement("h1", { style: { textAlign: "center" } }, "Settings"),
-	                    React.createElement("h3", null,
-	                        "FPS: ",
-	                        this.props.framerate),
-	                    React.createElement("h3", null,
-	                        "Animation Ratio: ",
-	                        this.props.animationRatio),
-	                    React.createElement("h3", null,
-	                        "Movement Speed: ",
-	                        this.props.settings.movementSpeed),
-	                    React.createElement("h3", null,
-	                        "Jump Speed: ",
-	                        this.props.settings.jumpSpeed),
-	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Mouse Sensitivity"), control: React.createElement("input", { type: "text", value: this.props.settings.mouseSensitivity, onChange: event => this.props.changeSetting("mouseSensitivity", event.target.value) }) }),
-	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Sticky Right Mouse Click"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.stickyRightMouseClick, onChange: event => this.props.changeSetting("stickyRightMouseClick", !this.props.settings.stickyRightMouseClick) }) }))));
-	        }
-	        else {
-	            return null;
-	        }
+	        return null;
 	    }
 	}
 	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = Settings;
+	exports.default = Ground;
 
 
 /***/ },
-/* 248 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	const React = __webpack_require__(1);
-	class Settings extends React.Component {
-	    render() {
-	        return (React.createElement("div", { style: { position: "relative", padding: 10 } },
-	            React.createElement("div", { style: { width: "50%", float: "left" } }, this.props.label),
-	            React.createElement("div", { style: { width: "50%", float: "left" } }, this.props.control)));
-	    }
-	}
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = Settings;
-
-
-/***/ },
-/* 249 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	const React = __webpack_require__(1);
-	const react_router_1 = __webpack_require__(178);
-	class OtherPage extends React.Component {
-	    render() {
-	        return (React.createElement("div", { className: "col-xs-12", style: { textAlign: "center" } },
-	            React.createElement("div", null,
-	                React.createElement(react_router_1.Link, { to: "/" }, "Take me Home!"),
-	                ".")));
-	    }
-	}
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = OtherPage;
-
-
-/***/ },
-/* 250 */
+/* 247 */,
+/* 248 */,
+/* 249 */,
+/* 250 */,
+/* 251 */
 /***/ function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {/**
@@ -26886,6 +27082,206 @@
 	
 	module.exports = PooledClass;
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
+
+/***/ },
+/* 252 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const React = __webpack_require__(1);
+	const Label_1 = __webpack_require__(253);
+	class Settings extends React.Component {
+	    render() {
+	        if (this.props.showSettings) {
+	            return (React.createElement("div", { style: { height: "100%", width: 400, position: "absolute", right: 0, backgroundColor: "grey", opacity: .9 } },
+	                React.createElement("div", null,
+	                    React.createElement("h1", { style: { textAlign: "center" } }, "Settings"),
+	                    React.createElement("button", { onClick: () => this.props.toggleShowSettings() }, "Close"),
+	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "On Screen D-Pad"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.keyboard.displayOnScreenKeyboard, onChange: event => this.props.changeSetting("keyboard", "displayOnScreenKeyboard", !this.props.settings.keyboard.displayOnScreenKeyboard) }) }),
+	                    React.createElement(Label_1.default, { label: "FPS:", control: this.props.framerate }),
+	                    React.createElement(Label_1.default, { label: "Animation Ratio:", control: this.props.animationRatio }),
+	                    React.createElement(Label_1.default, { label: "Movement Speed:", control: this.props.settings.movementSpeed }),
+	                    React.createElement(Label_1.default, { label: "Jump Speed:", control: this.props.settings.jumpSpeed }),
+	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Horizontal Mouse Sensitivity"), control: React.createElement("input", { type: "text", value: this.props.settings.mouse.mouseSensitivityX, onChange: event => this.props.changeSetting("mouse", "mouseSensitivityX", event.target.value) }) }),
+	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Vertical Mouse Sensitivity"), control: React.createElement("input", { type: "text", value: this.props.settings.mouse.mouseSensitivityY, onChange: event => this.props.changeSetting("mouse", "mouseSensitivityY", event.target.value) }) }),
+	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Sticky Right Mouse Click"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.mouse.stickyRightMouseClick, onChange: event => this.props.changeSetting("mouse", "stickyRightMouseClick", !this.props.settings.mouse.stickyRightMouseClick) }) }),
+	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Invert Input X Axis"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.mouse.invertX, onChange: event => this.props.changeSetting("mouse", "invertX", !this.props.settings.mouse.invertX) }) }),
+	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Invert Input Y Axis"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.mouse.invertY, onChange: event => this.props.changeSetting("mouse", "invertY", !this.props.settings.mouse.invertY) }) }),
+	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Invert Touch Input"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.mouse.invertTouch, onChange: event => this.props.changeSetting("mouse", "invertTouch", !this.props.settings.mouse.invertTouch) }) }))));
+	        }
+	        else {
+	            return null;
+	        }
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Settings;
+
+
+/***/ },
+/* 253 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const React = __webpack_require__(1);
+	class Label extends React.Component {
+	    render() {
+	        return (React.createElement("div", { style: { float: "left", padding: 5, width: "100%" } },
+	            React.createElement("div", { style: { width: "50%", float: "left" } }, this.props.label),
+	            React.createElement("div", { style: { width: "50%", float: "left" } }, this.props.control)));
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Label;
+
+
+/***/ },
+/* 254 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const KeyboardClass_1 = __webpack_require__(255);
+	const MouseClass_1 = __webpack_require__(256);
+	class default_1 {
+	    constructor() {
+	        this.movementSpeed = 200;
+	        this.jumpSpeed = 300;
+	        this.keyboard = new KeyboardClass_1.default();
+	        this.mouse = new MouseClass_1.default();
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = default_1;
+
+
+/***/ },
+/* 255 */
+/***/ function(module, exports) {
+
+	"use strict";
+	class default_1 {
+	    constructor() {
+	        this.displayOnScreenKeyboard = true;
+	        this.w = false;
+	        this.a = false;
+	        this.s = false;
+	        this.d = false;
+	        this.shift = false;
+	        this.space = false;
+	        this.control = false;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = default_1;
+
+
+/***/ },
+/* 256 */
+/***/ function(module, exports) {
+
+	"use strict";
+	class default_1 {
+	    constructor() {
+	        this.mouseSensitivityX = 5;
+	        this.mouseSensitivityY = 5;
+	        this.invertX = false;
+	        this.invertY = false;
+	        this.invertTouch = true;
+	        this.stickyRightMouseClick = false;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = default_1;
+
+
+/***/ },
+/* 257 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const React = __webpack_require__(1);
+	class OnScreenKeyboard extends React.Component {
+	    keyDown(event, settingName) {
+	        event.preventDefault();
+	        this.props.changeSetting("keyboard", settingName, true);
+	    }
+	    keyUp(event, settingName) {
+	        event.preventDefault();
+	        this.props.changeSetting("keyboard", settingName, false);
+	    }
+	    renderKey(key, width, height) {
+	        return (React.createElement("div", { style: { float: "left", height: height, width: width, backgroundColor: "grey" }, onTouchStart: (event) => this.keyDown(event, key), onTouchMove: (event) => this.keyDown(event, key), onTouchEnd: this.stop, onMouseDown: (event) => this.keyDown(event, key), onMouseUp: (event) => this.keyUp(event, key), onMouseOut: (event) => this.keyUp(event, key) }));
+	    }
+	    update(event, size) {
+	        if (event.pageX < size / 2.5) {
+	            if (window.innerHeight - event.pageY < size / 2.5) {
+	                this.props.changeSetting("keyboard", 'z', true);
+	            }
+	            else if (window.innerHeight - event.pageY > size - size / 2.5) {
+	                this.props.changeSetting("keyboard", 'q', true);
+	            }
+	            else {
+	                this.props.changeSetting("keyboard", 'a', true);
+	            }
+	        }
+	        else if (event.pageX > size - size / 2.5) {
+	            if (window.innerHeight - event.pageY < size / 2.5) {
+	                this.props.changeSetting("keyboard", 'c', true);
+	            }
+	            else if (window.innerHeight - event.pageY > size - size / 2.5) {
+	                this.props.changeSetting("keyboard", 'e', true);
+	            }
+	            else {
+	                this.props.changeSetting("keyboard", 'd', true);
+	            }
+	        }
+	        else {
+	            if (window.innerHeight - event.pageY < size / 2.5) {
+	                this.props.changeSetting("keyboard", 's', true);
+	            }
+	            else if (window.innerHeight - event.pageY > size - size / 2.5) {
+	                this.props.changeSetting("keyboard", 'w', true);
+	            }
+	            else {
+	                this.props.changeSetting("keyboard", 'stop', true);
+	            }
+	        }
+	    }
+	    move(event, size) {
+	        event.preventDefault();
+	        if (event.changedTouches) {
+	            for (let i = 0; i < event.changedTouches.length; i++) {
+	                this.update(event.changedTouches[i], size);
+	            }
+	        }
+	        else {
+	            this.update(event, size);
+	        }
+	    }
+	    stop(event) {
+	        event.preventDefault();
+	        this.props.changeSetting("keyboard", 'stop', true);
+	    }
+	    render() {
+	        let min = window.innerHeight < window.innerWidth ? window.innerHeight : window.innerWidth;
+	        if (this.props.settings.keyboard.displayOnScreenKeyboard) {
+	            return (React.createElement("div", null,
+	                React.createElement("canvas", { style: { position: "absolute", left: 0, bottom: 0, zIndex: 1, width: min / 2, height: min / 2 }, onTouchStart: (event) => this.move(event, min / 2), onTouchMove: (event) => this.move(event, min / 2), onTouchEnd: this.stop }),
+	                React.createElement("div", { style: { position: "absolute", left: 2 * min / 10, bottom: 3 * min / 10 } }, this.renderKey("w", min / 10, min / 10)),
+	                React.createElement("div", { style: { position: "absolute", left: min / 10, bottom: 2 * min / 10 } }, this.renderKey("a", min / 10, min / 10)),
+	                React.createElement("div", { style: { position: "absolute", left: 3 * min / 10, bottom: 2 * min / 10 } }, this.renderKey("d", min / 10, min / 10)),
+	                React.createElement("div", { style: { position: "absolute", left: 2 * min / 10, bottom: min / 10 } }, this.renderKey("s", min / 10, min / 10)),
+	                React.createElement("div", { style: { position: "absolute", left: window.innerWidth / 4, bottom: 0 } }, this.renderKey("space", window.innerWidth / 2, min / 5)),
+	                React.createElement("div", { style: { position: "absolute", right: min / 20, bottom: min / 20 } }, this.renderKey("shift", min / 6, min / 4))));
+	        }
+	        else {
+	            return null;
+	        }
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = OnScreenKeyboard;
+
 
 /***/ }
 /******/ ])));
