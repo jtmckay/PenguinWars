@@ -1,20 +1,21 @@
 import * as React from 'react';
 import * as BABYLON from 'babylonjs';
+import Gravitator from '../Gravitator';
 import degreesToRadians from '../../../functions/degreesToRadians';
-import applyGravity from '../../../functions/applyGravity';
+import KeyboardClass from '../../shared/classes/KeyboardClass';
 
 interface Props {
   register: (ground: BABYLON.Mesh) => void;
   scene: BABYLON.Scene;
   camera: BABYLON.ArcRotateCamera;
-  ground: BABYLON.Mesh;
+  keyboard: KeyboardClass;
   movementSpeed: number;
   jumpSpeed: number;
-  animationRatio: number;
   mesh: BABYLON.Mesh;
+  gravitator: Gravitator;
 }
 
-class Ground extends React.Component<Props, {}> {
+class Character extends React.Component<Props, {}> {
   characterMesh: BABYLON.Mesh;
   characterShell: BABYLON.Mesh;
 
@@ -28,7 +29,7 @@ class Ground extends React.Component<Props, {}> {
   }
 
   load() {
-    if (this.props.camera && this.props.ground) {
+    if (this.props.camera && this.props.gravitator.ground) {
       this.characterMesh = this.props.mesh;
       this.props.register(this.characterMesh);
 
@@ -98,26 +99,27 @@ class Ground extends React.Component<Props, {}> {
         }
       }));
 
-      let currentAnimationRatio = 1;
       this.props.scene.registerBeforeRender(function () {
         this.props.camera.target = this.characterMesh.position;
-        shell.linearVelocity.scaleEqual(currentAnimationRatio/this.props.animationRatio);
-        shell.angularVelocity.scaleEqual(currentAnimationRatio/this.props.animationRatio);
-        shell.mass = shell.mass * this.props.animationRatio;
-        if (!onGround) {
-          applyGravity(this.characterShell, this.props.animationRatio);
-        }
-        currentAnimationRatio = this.props.animationRatio;
+        this.props.gravitator.applyPhysicsZeroDeterioration(shell);
+        this.props.gravitator.applyGravity(this.characterShell);
+        onGround = this.props.gravitator.applyGroundConstraints(shell, this.characterShell, 30, canJump);
+        //everything
         //Stop rotation of the character in order to apply friction to stop the character without impulse
-        if (!w && !a && !s && !d) {
+        if (!w && !a && !s && !d
+           && !this.props.keyboard.w
+           && !this.props.keyboard.a
+           && !this.props.keyboard.s
+           && !this.props.keyboard.d) {
           shell.angularVelocity.scaleEqual(0);
+          shell.linearVelocity.scaleEqual(.99);
         }
         else {
           shell.linearVelocity.scaleEqual(.99);
           shell.angularVelocity.scaleEqual(.99);
         }
         //Adjust speed for framerate
-        let localSpeed = this.props.movementSpeed * this.props.animationRatio;
+        let localSpeed = this.props.movementSpeed * this.props.gravitator.appliedAnimationRatio;
         //Y-axis point to calculate the angle of the camera
         let vector1 = new BABYLON.Vector2(0, 1);
         //Camera position relative to the object
@@ -127,63 +129,43 @@ class Ground extends React.Component<Props, {}> {
 
         let current = shell.linearVelocity;
         let target = new BABYLON.Vector3(0, 0, 0);
-        //Calculation to determine if the character is on the ground
-        var pickInfo = this.props.ground.intersects(
-          new BABYLON.Ray(
-            new BABYLON.Vector3(shell.position.x, shell.position.y - 20, shell.position.z),
-            new BABYLON.Vector3(0, 1, 0)
-          ));
-        if (pickInfo.hit) {
-          //If the ground is within 1 of the bottom of the character (sphere diameter of 60)
-          if (canJump) {
-            target.y = -current.y;
-          }
-          onGround = true;
-          if (canJump && pickInfo.pickedPoint.y > shell.position.y - 29) {
-            target.y += (pickInfo.pickedPoint.y - (shell.position.y - 30)) * (pickInfo.pickedPoint.y - (shell.position.y - 30));
-          }
-          if (canJump && pickInfo.pickedPoint.y < shell.position.y - 31) {
-            target.y -= (pickInfo.pickedPoint.y - (shell.position.y - 30)) * (pickInfo.pickedPoint.y - (shell.position.y - 30));
-          }
-        }
-        else {
-          onGround = false;
-        }
 
         //Jump before modifying the localSpeed to compensate for shift and multiple directions
-        if (space && canJump && onGround) {
-          this.characterShell.applyImpulse(new BABYLON.Vector3(0, this.props.jumpSpeed * this.props.animationRatio, 0), this.characterMesh.position);
+        if ((space || this.props.keyboard.space) && canJump && onGround) {
+          this.characterShell.applyImpulse(new BABYLON.Vector3(0, this.props.jumpSpeed * this.props.gravitator.appliedAnimationRatio, 0), this.characterMesh.position);
           canJump = false;
           setTimeout(function () {
             canJump = true;
           }, 150);
         }
 
-        if ((w && !s || s && !w) &&
-        (d && !a || a && !d)) {
+        if (((w || this.props.keyboard.w) && (!s && !this.props.keyboard.s) ||
+          (s || this.props.keyboard.s) && (!w && !this.props.keyboard.w)) &&
+        ((d || this.props.keyboard.d) && (!a && !this.props.keyboard.a) ||
+          (a || this.props.keyboard.a) && (!d || !this.props.keyboard.d))) {
           localSpeed = localSpeed * Math.cos(degreesToRadians(45));
         }
 
         if (shift) {
           localSpeed = localSpeed/20;
         }
-        if (w) {
+        if (w || this.props.keyboard.w) {
           target.x += localSpeed * Math.sin(angle.radians() + degreesToRadians(90));
           target.z -= localSpeed * Math.cos(angle.radians() + degreesToRadians(90));
         }
-        if (a) {
+        if (a || this.props.keyboard.a) {
           target.x -= localSpeed * Math.sin(angle.radians());
           target.z += localSpeed * Math.cos(angle.radians());
         }
-        if (s) {
+        if (s || this.props.keyboard.s) {
           target.x += localSpeed * Math.sin(angle.radians() - degreesToRadians(90));
           target.z -= localSpeed * Math.cos(angle.radians() - degreesToRadians(90));
         }
-        if (d) {
+        if (d || this.props.keyboard.d) {
           target.x += localSpeed * Math.sin(angle.radians());
           target.z -= localSpeed * Math.cos(angle.radians());
         }
-        if (shift) {
+        if (shift || this.props.keyboard.shift) {
           this.characterShell.applyImpulse(target, this.characterMesh.position);
         }
         else {
@@ -207,4 +189,4 @@ class Ground extends React.Component<Props, {}> {
   }
 }
 
-export default Ground;
+export default Character;
