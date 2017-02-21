@@ -11,11 +11,12 @@ interface Props {
   segments: number;
   diameter: number;
   mass: number;
-  animationRatio: number;
+  addShadows: (mesh) => void;
 }
 
 class Sphere extends React.Component<Props, {}> {
   sphere: BABYLON.Mesh;
+  sphereAction: BABYLON.Action;
 
   componentWillReceiveProps(props) {
     if(this.props.hook) {
@@ -29,6 +30,7 @@ class Sphere extends React.Component<Props, {}> {
     this.sphere.checkCollisions = true;
     this.sphere.material = this.props.material;
     this.sphere.position = this.props.position;
+    this.props.addShadows(this.sphere);
 
     let physicalSphere = this.sphere.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: this.props.mass, friction: 1 } as any);
     //this.sphere.onCollide = event => console.log(event);
@@ -59,15 +61,16 @@ class Sphere extends React.Component<Props, {}> {
     this.sphere.animations.push(animationBox);
     //this.props.scene.beginAnimation(this.sphere, 0, 100, true);
 
-    this.props.scene.registerBeforeRender(function () {
+    this.sphereAction = this.props.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
       this.props.gravitator.applyPhysics(physicalSphere);
       this.props.gravitator.applyGravity(this.sphere);
       this.props.gravitator.applyGroundConstraints(physicalSphere, this.sphere, this.props.diameter/2);
-    }.bind(this));
+    }.bind(this)));
   }
 
   componentWillUnmount() {
     this.sphere.dispose();
+    this.props.scene.actionManager.actions.slice(this.props.scene.actionManager.actions.findIndex(i => i == this.sphereAction), 1);
     this.props.material.dispose();
   }
 

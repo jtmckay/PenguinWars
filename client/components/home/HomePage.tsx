@@ -18,7 +18,7 @@ class HomePage extends React.Component<{}, State> {
     super(props);
 
     this.state ={
-      showSettings: true,
+      showSettings: false,
       animationRatio: 1,
       settings: new SettingsClass()
     };
@@ -107,6 +107,7 @@ class HomePage extends React.Component<{}, State> {
           changeSetting={this.changeSetting}
           showSettings={this.state.showSettings} />
         <Canvas settings={this.state.settings}
+          changeSetting={this.changeSetting}
           invertMouse={() => this.setState({ settings:
             Object.assign({}, this.state.settings,
               {mouse: Object.assign({}, this.state.settings.mouse,

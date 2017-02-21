@@ -21,12 +21,6 @@ class Settings extends React.Component<Props, {}> {
           <div>
             <h1 style={{textAlign: "center"}}>Settings</h1>
             <button onClick={() => this.props.toggleShowSettings()}>Close</button>
-            <Label
-              label={<span>On Screen D-Pad</span>}
-              control={<input type="checkbox"
-              checked={this.props.settings.keyboard.displayOnScreenKeyboard}
-              onChange={event => this.props.changeSetting("keyboard", "displayOnScreenKeyboard", !this.props.settings.keyboard.displayOnScreenKeyboard)} />}
-            />
             <Label label={"FPS:"}
               control={this.props.framerate}/>
             <Label label={"Animation Ratio:"}

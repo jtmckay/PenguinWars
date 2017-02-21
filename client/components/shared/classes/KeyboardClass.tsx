@@ -1,6 +1,6 @@
 export default class {
   constructor() {
-    this.displayOnScreenKeyboard = true;
+    this.displayOnScreenKeyboard = false;
     this.w = false;
     this.a = false;
     this.s = false;

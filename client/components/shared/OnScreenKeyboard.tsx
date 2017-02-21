@@ -7,9 +7,22 @@ interface Props {
 }
 
 class OnScreenKeyboard extends React.Component<Props, {}> {
+  constructor(props) {
+    super(props);
+
+    this.stop = this.stop.bind(this);
+  }
   keyDown(event, settingName: string) {
     event.preventDefault();
-    this.props.changeSetting("keyboard", settingName, true);
+    if (settingName == "space") {
+      this.props.changeSetting("keyboard", settingName, !this.props.settings.keyboard.space);
+    }
+    else if (settingName =="shift") {
+      this.props.changeSetting("keyboard", settingName, !this.props.settings.keyboard.shift);
+    }
+    else {
+      this.props.changeSetting("keyboard", settingName, true);
+    }
   }
 
   keyUp(event, settingName: string) {
@@ -19,7 +32,7 @@ class OnScreenKeyboard extends React.Component<Props, {}> {
 
   renderKey(key: string, width: number, height: number) {
     return (
-      <div style={{float: "left", height: height, width: width, backgroundColor: "grey"}}
+      <div style={{float: "left", height: height, width: width, backgroundColor: "rgba(100, 100, 100, .5)"}}
         onTouchStart={(event) => this.keyDown(event, key)}
         onTouchMove={(event) => this.keyDown(event, key)}
         onTouchEnd={this.stop}
@@ -105,11 +118,11 @@ class OnScreenKeyboard extends React.Component<Props, {}> {
         <div style={{position: "absolute", left: 2*min/10, bottom: min/10}}>
           {this.renderKey("s", min/10, min/10)}
         </div>
-        <div style={{position: "absolute", left: window.innerWidth/4, bottom: 0}}>
-          {this.renderKey("space", window.innerWidth/2, min/5)}
+        <div style={{position: "absolute", left: min/2, bottom: 0}}>
+          {this.renderKey("space", window.innerWidth-7*min/10, min/10)}
         </div>
         <div style={{position: "absolute", right: min/20, bottom: min/20}}>
-          {this.renderKey("shift", min/6, min/4)}
+          {this.renderKey("shift", min/10, min/4)}
         </div>
       </div>
       );

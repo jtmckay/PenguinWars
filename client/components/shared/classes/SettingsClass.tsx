@@ -3,8 +3,8 @@ import MouseClass from './MouseClass';
 
 export default class {
   constructor() {
-    this.movementSpeed = 200;
-    this.jumpSpeed = 300;
+    this.movementSpeed = 100;
+    this.jumpSpeed = 200;
     this.keyboard = new KeyboardClass();
     this.mouse = new MouseClass();
   }

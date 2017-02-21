@@ -3,36 +3,47 @@ import * as BABYLON from 'babylonjs';
 import Gravitator from '../Gravitator';
 import degreesToRadians from '../../../functions/degreesToRadians';
 import KeyboardClass from '../../shared/classes/KeyboardClass';
+import ParticleSystem from './ParticleSystem';
 
 interface Props {
   register: (ground: BABYLON.Mesh) => void;
   scene: BABYLON.Scene;
+  assetsManager: BABYLON.AssetsManager;
   camera: BABYLON.ArcRotateCamera;
   keyboard: KeyboardClass;
   movementSpeed: number;
   jumpSpeed: number;
-  mesh: BABYLON.Mesh;
   gravitator: Gravitator;
+  addShadows: (mesh) => void;
 }
 
 class Character extends React.Component<Props, {}> {
+  action: BABYLON.Action;
   characterMesh: BABYLON.Mesh;
   characterShell: BABYLON.Mesh;
+  particleSystem: BABYLON.ParticleSystem;
 
   componentDidMount() {
-    this.load();
+    let addCharacterTask = this.props.assetsManager.addMeshTask("add character", "penguin", "babylonjs/", "penguin.babylon");
+    addCharacterTask.onSuccess = function(task: any) {
+      console.log('done');
+      this.characterMesh = task.loadedMeshes[0];
+      this.characterMesh.scaling = new BABYLON.Vector3(10, 10, 10);
+      this.props.register(this.characterMesh);
+      this.props.addShadows(this.characterMesh);
+      this.load();
+    }.bind(this);
+    this.props.assetsManager.load();
   }
 
   componentWillUnmount() {
     this.characterMesh.dispose();
     this.characterShell.dispose();
+    this.props.scene.actionManager.actions.slice(this.props.scene.actionManager.actions.findIndex(i => i == this.action), 1);
   }
 
   load() {
     if (this.props.camera && this.props.gravitator.ground) {
-      this.characterMesh = this.props.mesh;
-      this.props.register(this.characterMesh);
-
       this.characterShell = BABYLON.Mesh.CreateSphere("Character", 2, 60, this.props.scene, true);
       this.characterShell.isVisible = false;
       let shell = this.characterShell.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor,
@@ -48,8 +59,6 @@ class Character extends React.Component<Props, {}> {
       let shift = false;
       let onGround = false;
       let canJump = true;
-
-      this.props.scene.actionManager = new BABYLON.ActionManager(this.props.scene);
 
       this.props.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function (event) {
         if (event.sourceEvent.keyCode == 87) {
@@ -99,11 +108,12 @@ class Character extends React.Component<Props, {}> {
         }
       }));
 
-      this.props.scene.registerBeforeRender(function () {
+      this.action = this.props.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function() {
+        this.particleSystem.emitter.position = new BABYLON.Vector3(this.characterMesh.position.x, this.characterMesh.position.y -20, this.characterMesh.position.z);
         this.props.camera.target = this.characterMesh.position;
         this.props.gravitator.applyPhysicsZeroDeterioration(shell);
         this.props.gravitator.applyGravity(this.characterShell);
-        onGround = this.props.gravitator.applyGroundConstraints(shell, this.characterShell, 30, canJump);
+        onGround = this.props.gravitator.applyGroundConstraints(shell, this.characterShell, 10, canJump);
         //everything
         //Stop rotation of the character in order to apply friction to stop the character without impulse
         if (!w && !a && !s && !d
@@ -146,7 +156,7 @@ class Character extends React.Component<Props, {}> {
           localSpeed = localSpeed * Math.cos(degreesToRadians(45));
         }
 
-        if (shift) {
+        if (shift || this.props.keyboard.shift) {
           localSpeed = localSpeed/20;
         }
         if (w || this.props.keyboard.w) {
@@ -173,9 +183,9 @@ class Character extends React.Component<Props, {}> {
             new BABYLON.Vector3(target.x - current.x, target.y, target.z - current.z),
             this.characterMesh.position);
         }
-        this.characterMesh.rotation = new BABYLON.Vector3(0, -this.props.camera.alpha + degreesToRadians(90), 0);
+        this.characterMesh.rotation = new BABYLON.Vector3(0, -this.props.camera.alpha, 0);
         //skull.rotation.x -= 1;
-      }.bind(this));
+      }.bind(this)));
     }
     else {
       setTimeout(function() {
@@ -185,7 +195,14 @@ class Character extends React.Component<Props, {}> {
   }
 
   render() {
-    return null;
+    return (
+      <ParticleSystem scene={this.props.scene}
+        register={particleSystem => this.particleSystem = particleSystem}
+        capacity={20}
+        color1={new BABYLON.Color4(1, 1, 1, 1)}
+        color2={new BABYLON.Color4(1, 1, 1, 1)}
+        texture={new BABYLON.Texture("textures/flare.png", this.props.scene)} />
+      );
   }
 }
 

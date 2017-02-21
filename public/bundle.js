@@ -370,8 +370,15 @@
 /* 4 */
 /***/ function(module, exports) {
 
+	/*
+	object-assign
+	(c) Sindre Sorhus
+	@license MIT
+	*/
+	
 	'use strict';
 	/* eslint-disable no-unused-vars */
+	var getOwnPropertySymbols = Object.getOwnPropertySymbols;
 	var hasOwnProperty = Object.prototype.hasOwnProperty;
 	var propIsEnumerable = Object.prototype.propertyIsEnumerable;
 	
@@ -392,7 +399,7 @@
 			// Detect buggy property enumeration order in older V8 versions.
 	
 			// https://bugs.chromium.org/p/v8/issues/detail?id=4118
-			var test1 = new String('abc');  // eslint-disable-line
+			var test1 = new String('abc');  // eslint-disable-line no-new-wrappers
 			test1[5] = 'de';
 			if (Object.getOwnPropertyNames(test1)[0] === '5') {
 				return false;
@@ -421,7 +428,7 @@
 			}
 	
 			return true;
-		} catch (e) {
+		} catch (err) {
 			// We don't expect any of the above to throw, but better to be safe.
 			return false;
 		}
@@ -441,8 +448,8 @@
 				}
 			}
 	
-			if (Object.getOwnPropertySymbols) {
-				symbols = Object.getOwnPropertySymbols(from);
+			if (getOwnPropertySymbols) {
+				symbols = getOwnPropertySymbols(from);
 				for (var i = 0; i < symbols.length; i++) {
 					if (propIsEnumerable.call(from, symbols[i])) {
 						to[symbols[i]] = from[symbols[i]];
@@ -652,7 +659,7 @@
 
 /***/ },
 /* 6 */
-[251, 7],
+[253, 7],
 /* 7 */
 /***/ function(module, exports) {
 
@@ -2986,7 +2993,14 @@
 	    // We warn in this case but don't throw. We expect the element creation to
 	    // succeed and there will likely be errors in render.
 	    if (!validType) {
-	      process.env.NODE_ENV !== 'production' ? warning(false, 'React.createElement: type should not be null, undefined, boolean, or ' + 'number. It should be a string (for DOM elements) or a ReactClass ' + '(for composite components).%s', getDeclarationErrorAddendum()) : void 0;
+	      if (typeof type !== 'function' && typeof type !== 'string') {
+	        var info = '';
+	        if (type === undefined || typeof type === 'object' && type !== null && Object.keys(type).length === 0) {
+	          info += ' You likely forgot to export your component from the file ' + 'it\'s defined in.';
+	        }
+	        info += getDeclarationErrorAddendum();
+	        process.env.NODE_ENV !== 'production' ? warning(false, 'React.createElement: type is invalid -- expected a string (for ' + 'built-in components) or a class/function (for composite ' + 'components) but got: %s.%s', type == null ? type : typeof type, info) : void 0;
+	      }
 	    }
 	
 	    var element = ReactElement.createElement.apply(this, arguments);
@@ -3957,7 +3971,7 @@
 	
 	'use strict';
 	
-	module.exports = '15.4.1';
+	module.exports = '15.4.2';
 
 /***/ },
 /* 31 */
@@ -4156,6 +4170,13 @@
 	var internalInstanceKey = '__reactInternalInstance$' + Math.random().toString(36).slice(2);
 	
 	/**
+	 * Check if a given node should be cached.
+	 */
+	function shouldPrecacheNode(node, nodeID) {
+	  return node.nodeType === 1 && node.getAttribute(ATTR_NAME) === String(nodeID) || node.nodeType === 8 && node.nodeValue === ' react-text: ' + nodeID + ' ' || node.nodeType === 8 && node.nodeValue === ' react-empty: ' + nodeID + ' ';
+	}
+	
+	/**
 	 * Drill down (through composites and empty components) until we get a host or
 	 * host text component.
 	 *
@@ -4220,7 +4241,7 @@
 	    }
 	    // We assume the child nodes are in the same order as the child instances.
 	    for (; childNode !== null; childNode = childNode.nextSibling) {
-	      if (childNode.nodeType === 1 && childNode.getAttribute(ATTR_NAME) === String(childID) || childNode.nodeType === 8 && childNode.nodeValue === ' react-text: ' + childID + ' ' || childNode.nodeType === 8 && childNode.nodeValue === ' react-empty: ' + childID + ' ') {
+	      if (shouldPrecacheNode(childNode, childID)) {
 	        precacheNode(childInst, childNode);
 	        continue outer;
 	      }
@@ -6350,7 +6371,7 @@
 
 /***/ },
 /* 50 */
-[251, 35],
+[253, 35],
 /* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -11162,12 +11183,18 @@
 	    } else {
 	      var contentToUse = CONTENT_TYPES[typeof props.children] ? props.children : null;
 	      var childrenToUse = contentToUse != null ? null : props.children;
+	      // TODO: Validate that text is allowed as a child of this node
 	      if (contentToUse != null) {
-	        // TODO: Validate that text is allowed as a child of this node
-	        if (process.env.NODE_ENV !== 'production') {
-	          setAndValidateContentChildDev.call(this, contentToUse);
+	        // Avoid setting textContent when the text is empty. In IE11 setting
+	        // textContent on a text area will cause the placeholder to not
+	        // show within the textarea until it has been focused and blurred again.
+	        // https://github.com/facebook/react/issues/6731#issuecomment-254874553
+	        if (contentToUse !== '') {
+	          if (process.env.NODE_ENV !== 'production') {
+	            setAndValidateContentChildDev.call(this, contentToUse);
+	          }
+	          DOMLazyTree.queueText(lazyTree, contentToUse);
 	        }
-	        DOMLazyTree.queueText(lazyTree, contentToUse);
 	      } else if (childrenToUse != null) {
 	        var mountImages = this.mountChildren(childrenToUse, transaction, context);
 	        for (var i = 0; i < mountImages.length; i++) {
@@ -13087,7 +13114,17 @@
 	      }
 	    } else {
 	      if (props.value == null && props.defaultValue != null) {
-	        node.defaultValue = '' + props.defaultValue;
+	        // In Chrome, assigning defaultValue to certain input types triggers input validation.
+	        // For number inputs, the display value loses trailing decimal points. For email inputs,
+	        // Chrome raises "The specified value <x> is not a valid email address".
+	        //
+	        // Here we check to see if the defaultValue has actually changed, avoiding these problems
+	        // when the user is inputting text
+	        //
+	        // https://github.com/facebook/react/issues/7253
+	        if (node.defaultValue !== '' + props.defaultValue) {
+	          node.defaultValue = '' + props.defaultValue;
+	        }
 	      }
 	      if (props.checked == null && props.defaultChecked != null) {
 	        node.defaultChecked = !!props.defaultChecked;
@@ -13815,9 +13852,15 @@
 	    // This is in postMount because we need access to the DOM node, which is not
 	    // available until after the component has mounted.
 	    var node = ReactDOMComponentTree.getNodeFromInstance(inst);
+	    var textContent = node.textContent;
 	
-	    // Warning: node.value may be the empty string at this point (IE11) if placeholder is set.
-	    node.value = node.textContent; // Detach value from defaultValue
+	    // Only set node.value if textContent is equal to the expected
+	    // initial value. In IE10/IE11 there is a bug where the placeholder attribute
+	    // will populate textContent as well.
+	    // https://developer.microsoft.com/microsoft-edge/platform/issues/101525/
+	    if (textContent === inst._wrapperState.initialValue) {
+	      node.value = textContent;
+	    }
 	  }
 	};
 	
@@ -14619,7 +14662,17 @@
 	    instance = ReactEmptyComponent.create(instantiateReactComponent);
 	  } else if (typeof node === 'object') {
 	    var element = node;
-	    !(element && (typeof element.type === 'function' || typeof element.type === 'string')) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: %s.%s', element.type == null ? element.type : typeof element.type, getDeclarationErrorAddendum(element._owner)) : _prodInvariant('130', element.type == null ? element.type : typeof element.type, getDeclarationErrorAddendum(element._owner)) : void 0;
+	    var type = element.type;
+	    if (typeof type !== 'function' && typeof type !== 'string') {
+	      var info = '';
+	      if (process.env.NODE_ENV !== 'production') {
+	        if (type === undefined || typeof type === 'object' && type !== null && Object.keys(type).length === 0) {
+	          info += ' You likely forgot to export your component from the file ' + 'it\'s defined in.';
+	        }
+	      }
+	      info += getDeclarationErrorAddendum(element._owner);
+	       true ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: %s.%s', type == null ? type : typeof type, info) : _prodInvariant('130', type == null ? type : typeof type, info) : void 0;
+	    }
 	
 	    // Special case string values
 	    if (typeof element.type === 'string') {
@@ -14909,7 +14962,7 @@
 	      // Since plain JS classes are defined without any special initialization
 	      // logic, we can not catch common errors early. Therefore, we have to
 	      // catch them here, at initialization time, instead.
-	      process.env.NODE_ENV !== 'production' ? warning(!inst.getInitialState || inst.getInitialState.isReactClassApproved, 'getInitialState was defined on %s, a plain JavaScript class. ' + 'This is only supported for classes created using React.createClass. ' + 'Did you mean to define a state property instead?', this.getName() || 'a component') : void 0;
+	      process.env.NODE_ENV !== 'production' ? warning(!inst.getInitialState || inst.getInitialState.isReactClassApproved || inst.state, 'getInitialState was defined on %s, a plain JavaScript class. ' + 'This is only supported for classes created using React.createClass. ' + 'Did you mean to define a state property instead?', this.getName() || 'a component') : void 0;
 	      process.env.NODE_ENV !== 'production' ? warning(!inst.getDefaultProps || inst.getDefaultProps.isReactClassApproved, 'getDefaultProps was defined on %s, a plain JavaScript class. ' + 'This is only supported for classes created using React.createClass. ' + 'Use a static property to define defaultProps instead.', this.getName() || 'a component') : void 0;
 	      process.env.NODE_ENV !== 'production' ? warning(!inst.propTypes, 'propTypes was defined as an instance property on %s. Use a static ' + 'property to define propTypes instead.', this.getName() || 'a component') : void 0;
 	      process.env.NODE_ENV !== 'production' ? warning(!inst.contextTypes, 'contextTypes was defined as an instance property on %s. Use a ' + 'static property to define contextTypes instead.', this.getName() || 'a component') : void 0;
@@ -15885,14 +15938,11 @@
 	
 	'use strict';
 	
-	var _prodInvariant = __webpack_require__(35),
-	    _assign = __webpack_require__(4);
+	var _prodInvariant = __webpack_require__(35);
 	
 	var invariant = __webpack_require__(8);
 	
 	var genericComponentClass = null;
-	// This registry keeps track of wrapper classes around host tags.
-	var tagToComponentClass = {};
 	var textComponentClass = null;
 	
 	var ReactHostComponentInjection = {
@@ -15905,11 +15955,6 @@
 	  // rendered as props.
 	  injectTextComponentClass: function (componentClass) {
 	    textComponentClass = componentClass;
-	  },
-	  // This accepts a keyed object with classes as values. Each key represents a
-	  // tag. That particular tag will use this class instead of the generic one.
-	  injectComponentClasses: function (componentClasses) {
-	    _assign(tagToComponentClass, componentClasses);
 	  }
 	};
 	
@@ -21297,7 +21342,7 @@
 	
 	  var match = void 0,
 	      lastIndex = 0,
-	      matcher = /:([a-zA-Z_$][a-zA-Z0-9_$]*)|\*\*|\*|\(|\)/g;
+	      matcher = /:([a-zA-Z_$][a-zA-Z0-9_$]*)|\*\*|\*|\(|\)|\\\(|\\\)/g;
 	  while (match = matcher.exec(pattern)) {
 	    if (match.index !== lastIndex) {
 	      tokens.push(pattern.slice(lastIndex, match.index));
@@ -21317,6 +21362,10 @@
 	      regexpSource += '(?:';
 	    } else if (match[0] === ')') {
 	      regexpSource += ')?';
+	    } else if (match[0] === '\\(') {
+	      regexpSource += '\\(';
+	    } else if (match[0] === '\\)') {
+	      regexpSource += '\\)';
 	    }
 	
 	    tokens.push(match[0]);
@@ -21471,6 +21520,10 @@
 	      parenCount -= 1;
 	
 	      if (parenCount) parenHistory[parenCount - 1] += parenText;else pathname += parenText;
+	    } else if (token === '\\(') {
+	      pathname += '(';
+	    } else if (token === '\\)') {
+	      pathname += ')';
 	    } else if (token.charAt(0) === ':') {
 	      paramName = token.substring(1);
 	      paramValue = params[paramName];
@@ -21681,7 +21734,7 @@
 	        children = _props.children;
 	
 	
-	    !history.getCurrentLocation ? process.env.NODE_ENV !== 'production' ? (0, _invariant2.default)(false, 'You have provided a history object created with history v2.x or ' + 'earlier. This version of React Router is only compatible with v3 ' + 'history objects. Please upgrade to history v3.x.') : (0, _invariant2.default)(false) : void 0;
+	    !history.getCurrentLocation ? process.env.NODE_ENV !== 'production' ? (0, _invariant2.default)(false, 'You have provided a history object created with history v4.x or v2.x ' + 'and earlier. This version of React Router is only compatible with v3 ' + 'history objects. Please change to history v3.x.') : (0, _invariant2.default)(false) : void 0;
 	
 	    return (0, _createTransitionManager3.default)(history, (0, _RouteUtils.createRoutes)(routes || children));
 	  },
@@ -22338,7 +22391,7 @@
 	  return runTransitionHooks(hooks.length, function (index, replace, next) {
 	    var wrappedNext = function wrappedNext() {
 	      if (enterHooks.has(hooks[index])) {
-	        next();
+	        next.apply(undefined, arguments);
 	        enterHooks.remove(hooks[index]);
 	      }
 	    };
@@ -22362,7 +22415,7 @@
 	  return runTransitionHooks(hooks.length, function (index, replace, next) {
 	    var wrappedNext = function wrappedNext() {
 	      if (changeHooks.has(hooks[index])) {
-	        next();
+	        next.apply(undefined, arguments);
 	        changeHooks.remove(hooks[index]);
 	      }
 	    };
@@ -22764,9 +22817,14 @@
 	    if ((0, _PromiseUtils.isPromise)(indexRoutesReturn)) indexRoutesReturn.then(function (indexRoute) {
 	      return callback(null, (0, _RouteUtils.createRoutes)(indexRoute)[0]);
 	    }, callback);
-	  } else if (route.childRoutes) {
-	    (function () {
-	      var pathless = route.childRoutes.filter(function (childRoute) {
+	  } else if (route.childRoutes || route.getChildRoutes) {
+	    var onChildRoutes = function onChildRoutes(error, childRoutes) {
+	      if (error) {
+	        callback(error);
+	        return;
+	      }
+	
+	      var pathless = childRoutes.filter(function (childRoute) {
 	        return !childRoute.path;
 	      });
 	
@@ -22782,7 +22840,12 @@
 	      }, function (err, routes) {
 	        callback(null, routes);
 	      });
-	    })();
+	    };
+	
+	    var result = getChildRoutes(route, location, paramNames, paramValues, onChildRoutes);
+	    if (result) {
+	      onChildRoutes.apply(undefined, result);
+	    }
 	  } else {
 	    callback();
 	  }
@@ -22836,7 +22899,7 @@
 	    // By assumption, pattern is non-empty here, which is the prerequisite for
 	    // actually terminating a match.
 	    if (remainingPathname === '') {
-	      var _ret2 = function () {
+	      var _ret = function () {
 	        var match = {
 	          routes: [route],
 	          params: createParams(paramNames, paramValues)
@@ -22867,7 +22930,7 @@
 	        };
 	      }();
 	
-	      if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
+	      if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
 	    }
 	  }
 	
@@ -23445,7 +23508,7 @@
 	
 	    if (router) {
 	      // If user does not specify a `to` prop, return an empty anchor tag.
-	      if (to == null) {
+	      if (!to) {
 	        return _react2.default.createElement('a', props);
 	      }
 	
@@ -23562,6 +23625,10 @@
 	      var _this = this;
 	
 	      var router = this.props.router || this.context.router;
+	      if (!router) {
+	        return _react2.default.createElement(WrappedComponent, this.props);
+	      }
+	
 	      var params = router.params,
 	          location = router.location,
 	          routes = router.routes;
@@ -24227,6 +24294,92 @@
 	var strictUriEncode = __webpack_require__(212);
 	var objectAssign = __webpack_require__(4);
 	
+	function encoderForArrayFormat(opts) {
+		switch (opts.arrayFormat) {
+			case 'index':
+				return function (key, value, index) {
+					return value === null ? [
+						encode(key, opts),
+						'[',
+						index,
+						']'
+					].join('') : [
+						encode(key, opts),
+						'[',
+						encode(index, opts),
+						']=',
+						encode(value, opts)
+					].join('');
+				};
+	
+			case 'bracket':
+				return function (key, value) {
+					return value === null ? encode(key, opts) : [
+						encode(key, opts),
+						'[]=',
+						encode(value, opts)
+					].join('');
+				};
+	
+			default:
+				return function (key, value) {
+					return value === null ? encode(key, opts) : [
+						encode(key, opts),
+						'=',
+						encode(value, opts)
+					].join('');
+				};
+		}
+	}
+	
+	function parserForArrayFormat(opts) {
+		var result;
+	
+		switch (opts.arrayFormat) {
+			case 'index':
+				return function (key, value, accumulator) {
+					result = /\[(\d*)\]$/.exec(key);
+	
+					key = key.replace(/\[\d*\]$/, '');
+	
+					if (!result) {
+						accumulator[key] = value;
+						return;
+					}
+	
+					if (accumulator[key] === undefined) {
+						accumulator[key] = {};
+					}
+	
+					accumulator[key][result[1]] = value;
+				};
+	
+			case 'bracket':
+				return function (key, value, accumulator) {
+					result = /(\[\])$/.exec(key);
+	
+					key = key.replace(/\[\]$/, '');
+	
+					if (!result || accumulator[key] === undefined) {
+						accumulator[key] = value;
+						return;
+					}
+	
+					accumulator[key] = [].concat(accumulator[key], value);
+				};
+	
+			default:
+				return function (key, value, accumulator) {
+					if (accumulator[key] === undefined) {
+						accumulator[key] = value;
+						return;
+					}
+	
+					accumulator[key] = [].concat(accumulator[key], value);
+				};
+		}
+	}
+	
 	function encode(value, opts) {
 		if (opts.encode) {
 			return opts.strict ? strictUriEncode(value) : encodeURIComponent(value);
@@ -24235,11 +24388,29 @@
 		return value;
 	}
 	
+	function keysSorter(input) {
+		if (Array.isArray(input)) {
+			return input.sort();
+		} else if (typeof input === 'object') {
+			return keysSorter(Object.keys(input)).sort(function (a, b) {
+				return Number(a) - Number(b);
+			}).map(function (key) {
+				return input[key];
+			});
+		}
+	
+		return input;
+	}
+	
 	exports.extract = function (str) {
 		return str.split('?')[1] || '';
 	};
 	
-	exports.parse = function (str) {
+	exports.parse = function (str, opts) {
+		opts = objectAssign({arrayFormat: 'none'}, opts);
+	
+		var formatter = parserForArrayFormat(opts);
+	
 		// Create an object with no prototype
 		// https://github.com/sindresorhus/query-string/issues/47
 		var ret = Object.create(null);
@@ -24261,31 +24432,36 @@
 			var key = parts.shift();
 			var val = parts.length > 0 ? parts.join('=') : undefined;
 	
-			key = decodeURIComponent(key);
-	
 			// missing `=` should be `null`:
 			// http://w3.org/TR/2012/WD-url-20120524/#collect-url-parameters
 			val = val === undefined ? null : decodeURIComponent(val);
 	
-			if (ret[key] === undefined) {
-				ret[key] = val;
-			} else if (Array.isArray(ret[key])) {
-				ret[key].push(val);
-			} else {
-				ret[key] = [ret[key], val];
-			}
+			formatter(decodeURIComponent(key), val, ret);
 		});
 	
-		return ret;
+		return Object.keys(ret).sort().reduce(function (result, key) {
+			var val = ret[key];
+			if (Boolean(val) && typeof val === 'object' && !Array.isArray(val)) {
+				// Sort object keys, not values
+				result[key] = keysSorter(val);
+			} else {
+				result[key] = val;
+			}
+	
+			return result;
+		}, Object.create(null));
 	};
 	
 	exports.stringify = function (obj, opts) {
 		var defaults = {
 			encode: true,
-			strict: true
+			strict: true,
+			arrayFormat: 'none'
 		};
 	
 		opts = objectAssign(defaults, opts);
+	
+		var formatter = encoderForArrayFormat(opts);
 	
 		return obj ? Object.keys(obj).sort().map(function (key) {
 			var val = obj[key];
@@ -24306,11 +24482,7 @@
 						return;
 					}
 	
-					if (val2 === null) {
-						result.push(encode(key, opts));
-					} else {
-						result.push(encode(key, opts) + '=' + encode(val2, opts));
-					}
+					result.push(formatter(key, val2, result.length));
 				});
 	
 				return result.join('&');
@@ -25952,14 +26124,14 @@
 	"use strict";
 	const React = __webpack_require__(1);
 	const Canvas_1 = __webpack_require__(236);
-	const Settings_1 = __webpack_require__(252);
-	const SettingsClass_1 = __webpack_require__(254);
-	const OnScreenKeyboard_1 = __webpack_require__(257);
+	const Settings_1 = __webpack_require__(247);
+	const SettingsClass_1 = __webpack_require__(249);
+	const OnScreenKeyboard_1 = __webpack_require__(252);
 	class HomePage extends React.Component {
 	    constructor(props) {
 	        super(props);
 	        this.state = {
-	            showSettings: true,
+	            showSettings: false,
 	            animationRatio: 1,
 	            settings: new SettingsClass_1.default()
 	        };
@@ -26036,7 +26208,7 @@
 	        return (React.createElement("div", { onKeyDown: this.keyDown },
 	            React.createElement(OnScreenKeyboard_1.default, { settings: this.state.settings, changeSetting: this.changeSetting }),
 	            React.createElement(Settings_1.default, { framerate: this.state.framerate, animationRatio: this.state.animationRatio, settings: this.state.settings, toggleShowSettings: () => this.setState({ showSettings: !this.state.showSettings }), changeSetting: this.changeSetting, showSettings: this.state.showSettings }),
-	            React.createElement(Canvas_1.default, { settings: this.state.settings, invertMouse: () => this.setState({ settings: Object.assign({}, this.state.settings, { mouse: Object.assign({}, this.state.settings.mouse, { mouseSensitivityX: -this.state.settings.mouse.mouseSensitivityX,
+	            React.createElement(Canvas_1.default, { settings: this.state.settings, changeSetting: this.changeSetting, invertMouse: () => this.setState({ settings: Object.assign({}, this.state.settings, { mouse: Object.assign({}, this.state.settings.mouse, { mouseSensitivityX: -this.state.settings.mouse.mouseSensitivityX,
 	                            mouseSensitivityY: -this.state.settings.mouse.mouseSensitivityY }) }) }), setFramerate: (fps, animationRatio) => this.setState({ framerate: fps, animationRatio: animationRatio }) })));
 	    }
 	}
@@ -26063,11 +26235,10 @@
 	    constructor(props) {
 	        super(props);
 	        this.hook = {};
-	        this.state = {
-	            position: new BABYLON.Vector3(-30, 0, 0)
-	        };
+	        this.state = {};
 	        this.WebGLSupported = BABYLON.Engine.isSupported();
 	        this.gravitator = new Gravitator_1.default();
+	        this.addShadows = this.addShadows.bind(this);
 	        this.pointerLockCallback = this.pointerLockCallback.bind(this);
 	        this.lockPointer = this.lockPointer.bind(this);
 	        this.unlockPointer = this.unlockPointer.bind(this);
@@ -26075,6 +26246,7 @@
 	        this.mouseUp = this.mouseUp.bind(this);
 	        this.mouseDown = this.mouseDown.bind(this);
 	        this.mouseWheel = this.mouseWheel.bind(this);
+	        this.fire = this.fire.bind(this);
 	    }
 	    componentDidMount() {
 	        this.canvas = document.getElementById("renderCanvas");
@@ -26085,50 +26257,20 @@
 	            this.engine = new BABYLON.Engine(this.canvas, true);
 	            let scene = this.createScene();
 	            /*
-	                  let carTask = this.assetsManager.addMeshTask("car task", "test", "babylonjs/", "skull.babylon");
-	                  carTask.onSuccess = function(task: any) {
-	                    this.car = task.loadedMeshes[0];
-	                    this.car.position = new BABYLON.Vector3(5, 0, 0);
-	                    let car = this.car.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, {mass: 5, friction: 1});
+	                  BABYLON.SceneLoader.ImportMesh("penguin", "babylonjs/", "penguin.babylon", scene, function(newMeshes) {
+	                    this.random = newMeshes[0];
+	                    this.random.scaling = new BABYLON.Vector3(10, 10, 10);
+	                    this.random.position.z = 50;
+	                    this.addShadows(this.random);
+	                    let random = this.random.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, {mass: 10});
 	            
-	                    scene.registerBeforeRender(function () {
-	                      car.angularVelocity.scaleEqual(.95);
+	                    this.state.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
+	                      this.gravitator.applyPhysics(random);
+	                      this.gravitator.applyGravity(this.random);
+	                      this.gravitator.applyGroundConstraints(random, this.random, 30);
 	                      //car.linearVelocity.scaleEqual(.9);
-	                    });
-	                  }.bind(this);
-	            */
-	            let addCharacterTask = this.assetsManager.addMeshTask("add character", "test", "babylonjs/", "skull.babylon");
-	            addCharacterTask.onSuccess = function (task) {
-	                this.skullMesh = task.loadedMeshes[0];
-	            }.bind(this);
-	            let addSkullTask = this.assetsManager.addMeshTask("add character", "test", "babylonjs/", "skull.babylon");
-	            addSkullTask.onSuccess = function (task) {
-	                this.car = task.loadedMeshes[0];
-	                this.car.position = new BABYLON.Vector3(150, 200, 0);
-	                let car = this.car.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 100, friction: 100 });
-	                //this.car.scaling = new BABYLON.Vector3(5, 5, 5);a
-	                this.state.scene.registerBeforeRender(function () {
-	                    this.gravitator.applyPhysics(car);
-	                    this.gravitator.applyGravity(this.car);
-	                    this.gravitator.applyGroundConstraints(car, this.car, 30);
-	                    //car.linearVelocity.scaleEqual(.9);
-	                }.bind(this));
-	            }.bind(this);
-	            /*
-	            BABYLON.SceneLoader.Load("babylonjs/", "originalcar.babylon", this.engine, function(newScene) {
-	              this.engine.runRenderLoop(function () {
-	                newScene.render();
-	              });
-	            }.bind(this));
-	            */
-	            /*
-	            scene.onPointerDown = function (event, pickResult) {
-	              // if the click hits the ground object, we change the impact position
-	              if (pickResult.hit) {
-	                impact.position.x = pickResult.pickedPoint.x;
-	                impact.position.y = pickResult.pickedPoint.y;
-	              }
-	            };
+	                    }.bind(this)));
+	                  }.bind(this));
 	            */
 	            this.setState({ scene: scene });
 	            window.addEventListener("resize", function () {
@@ -26137,6 +26279,7 @@
 	            this.assetsManager.onFinish = function (tasks) {
 	                this.assetsLoaded = true;
 	                console.log("Finish");
+	                this.assetsManager.tasks.length = 0;
 	                this.engine.hideLoadingUI();
 	                this.engine.runRenderLoop(function () {
 	                    scene.render();
@@ -26150,19 +26293,35 @@
 	            this.assetsManager.load();
 	        }
 	    }
+	    addShadows(mesh) {
+	        if (this.shadowGenerator) {
+	            this.shadowGenerator.getShadowMap().renderList.push(mesh);
+	        }
+	        else {
+	            setTimeout(function () {
+	                this.addShadows(mesh);
+	            }.bind(this), 50);
+	        }
+	    }
 	    //Attaches control of the camera only when the pointer is locked to the screen
 	    //aka only rotates the camera when the mouse is anchored
 	    pointerLockCallback(event) {
 	        if (document.pointerLockElement == this.canvas) {
 	            this.pointerLocked = true;
+	            if (this.props.settings.mouse.invertTouch) {
+	                this.props.invertMouse();
+	            }
 	        }
 	        else {
 	            this.pointerLocked = false;
+	            if (this.props.settings.mouse.invertTouch) {
+	                this.props.invertMouse();
+	            }
 	        }
 	    }
 	    mouseDown(event) {
 	        if (event.nativeEvent.which == 1) {
-	            this.camera.detachControl(this.canvas);
+	            this.charge();
 	        }
 	        if (!this.props.settings.mouse.stickyRightMouseClick && event.nativeEvent.which == 3) {
 	            this.lockPointer();
@@ -26175,9 +26334,44 @@
 	        }
 	    }
 	    mouseUp(event) {
+	        if (event.nativeEvent.which == 1) {
+	            this.fire();
+	        }
 	        if (!this.props.settings.mouse.stickyRightMouseClick && event.nativeEvent.which == 3) {
 	            this.unlockPointer();
 	        }
+	    }
+	    charge() {
+	    }
+	    fire() {
+	        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+	        material.emissiveColor = new BABYLON.Color3(1, 1, 1);
+	        let snowBall = BABYLON.Mesh.CreateSphere("Snowball", 6, 10, this.state.scene, true);
+	        this.addShadows(snowBall);
+	        //snowBall.ellipsoid = new BABYLON.Vector3(1, 1, 1);
+	        //snowBall.checkCollisions = true;
+	        snowBall.material = material;
+	        snowBall.position = new BABYLON.Vector3(this.character.position.x, this.character.position.y + 40, this.character.position.z);
+	        this.particleSystem2.emitter.position = snowBall.position;
+	        let physicalSnowBall = snowBall.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 1000 });
+	        let x = this.particleSystem.emitter.position.x - snowBall.position.x;
+	        let y = this.particleSystem.emitter.position.y - snowBall.position.y;
+	        let z = this.particleSystem.emitter.position.z - snowBall.position.z;
+	        let vector1 = new BABYLON.Vector2(0, 1);
+	        //Target position relative to the character
+	        let vector2 = new BABYLON.Vector2(x, z);
+	        let angle = BABYLON.Angle.BetweenTwoPoints(vector1, vector2);
+	        let distance = Math.sqrt(x * x + z * z);
+	        let vector3 = new BABYLON.Vector2(distance, y);
+	        let verticalAngle = BABYLON.Angle.BetweenTwoPoints(vector1, vector3);
+	        let power = 400 * this.gravitator.appliedAnimationRatio;
+	        snowBall.applyImpulse(new BABYLON.Vector3(power * Math.cos(angle.radians()), distance / 10 + (Math.sin(verticalAngle.radians())) * power, power * Math.sin(angle.radians())), snowBall.position);
+	        let action = this.state.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
+	            if (this.gravitator.removeBelowGround(snowBall, this.state.scene, action)) {
+	                this.gravitator.applyPhysicsZeroDeterioration(physicalSnowBall);
+	                this.gravitator.applyGravity(snowBall);
+	            }
+	        }.bind(this)));
 	    }
 	    keyDown(event) {
 	        event.preventDefault();
@@ -26186,16 +26380,10 @@
 	        }
 	    }
 	    lockPointer() {
-	        if (this.props.settings.mouse.invertTouch) {
-	            this.props.invertMouse();
-	        }
 	        this.canvas.requestPointerLock();
 	        this.camera.attachControl(this.canvas, true);
 	    }
 	    unlockPointer() {
-	        if (this.props.settings.mouse.invertTouch) {
-	            this.props.invertMouse();
-	        }
 	        document.exitPointerLock();
 	        this.camera.detachControl(this.canvas);
 	    }
@@ -26210,13 +26398,14 @@
 	    }
 	    createScene() {
 	        let scene = new BABYLON.Scene(this.engine);
+	        scene.actionManager = new BABYLON.ActionManager(scene);
 	        this.assetsManager = new BABYLON.AssetsManager(scene);
 	        scene.collisionsEnabled = true;
-	        scene.enablePhysics(new BABYLON.Vector3(0, 0, 0), new BABYLON.OimoJSPlugin());
+	        scene.enablePhysics(null, new BABYLON.OimoJSPlugin());
 	        scene.fogMode = BABYLON.Scene.FOGMODE_EXP2;
 	        scene.fogDensity = .0003;
 	        //runs every frame
-	        scene.registerBeforeRender(function () {
+	        scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
 	            this.props.setFramerate(this.engine.getFps(), this.gravitator.appliedAnimationRatio);
 	            var pickResult = scene.pick(scene.pointerX, scene.pointerY, function (mesh) {
 	                return mesh.name == "ground";
@@ -26224,14 +26413,22 @@
 	            if (pickResult.hit) {
 	                this.particleSystem.emitter.position = pickResult.pickedPoint;
 	            }
-	        }.bind(this));
+	        }.bind(this)));
 	        this.gravitator.registerGravitator(scene);
 	        return scene;
 	    }
 	    render() {
 	        if (this.state.scene && this.assetsLoaded) {
-	            return (React.createElement("canvas", { id: "renderCanvas", style: { width: "100vw", height: "100vh" }, onKeyDown: this.keyDown, onMouseDown: this.mouseDown, onMouseUp: this.mouseUp, onTouchStart: () => this.camera.attachControl(this.canvas, true), onWheel: this.mouseWheel },
-	                React.createElement(Light_1.default, { scene: this.state.scene }),
+	            return (React.createElement("canvas", { id: "renderCanvas", style: { width: "100vw", height: "100vh" }, onKeyDown: this.keyDown, onMouseDown: this.mouseDown, onMouseUp: this.mouseUp, onTouchStart: event => {
+	                    this.camera.attachControl(this.canvas, true);
+	                    this.fire();
+	                    this.props.changeSetting("keyboard", "displayOnScreenKeyboard", true);
+	                    this.shadowGenerator.getShadowMap().resize(1);
+	                }, onWheel: this.mouseWheel },
+	                React.createElement(Light_1.default, { scene: this.state.scene, register: (light) => this.light = light, registerShadowGenerator: (shadowGenerator) => {
+	                        shadowGenerator.usePoissonSampling = true;
+	                        this.shadowGenerator = shadowGenerator;
+	                    } }),
 	                React.createElement(ArcRotateCamera_1.default, { scene: this.state.scene, register: (camera) => this.camera = camera, canvas: this.canvas, target: BABYLON.Vector3.Zero(), invertX: this.props.settings.mouse.invertX, invertY: this.props.settings.mouse.invertY, invertTouch: this.props.settings.mouse.invertTouch, mouseSensitivityX: this.props.settings.mouse.mouseSensitivityX, mouseSensitivityY: this.props.settings.mouse.mouseSensitivityY }),
 	                React.createElement(Ground_1.default, { scene: this.state.scene, register: ground => this.gravitator.ground = ground, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
@@ -26332,22 +26529,22 @@
 	                        material.alpha = .3;
 	                        return material;
 	                    }.bind(this))(), size: 8000, position: new BABYLON.Vector3(0, 1400, 0), rotation: new BABYLON.Vector3(Math.PI / 2, 0, 0) }),
-	                React.createElement(Character_1.default, { gravitator: this.gravitator, scene: this.state.scene, register: character => this.character = character, mesh: this.skullMesh, camera: this.camera, keyboard: this.props.settings.keyboard, movementSpeed: this.props.settings.movementSpeed, jumpSpeed: this.props.settings.jumpSpeed }),
-	                React.createElement(ParticleSystem_1.default, { scene: this.state.scene, register: particleSystem => this.particleSystem = particleSystem, position: new BABYLON.Vector3(0, -10, 0), color1: new BABYLON.Color4(.1, .2, .8, 1), color2: new BABYLON.Color4(.2, .3, 1, 1), texture: new BABYLON.Texture("textures/flare.png", this.state.scene) }),
-	                React.createElement(ParticleSystem_1.default, { scene: this.state.scene, register: particleSystem => this.particleSystem2 = particleSystem, position: new BABYLON.Vector3(0, -10, 0), color1: new BABYLON.Color4(.8, .2, .1, 1), color2: new BABYLON.Color4(1, .3, .2, 1), texture: new BABYLON.Texture("textures/flare.png", this.state.scene) }),
-	                React.createElement(Sphere_1.default, { scene: this.state.scene, gravitator: this.gravitator, animationRatio: this.gravitator.appliedAnimationRatio, segments: 20, diameter: 20, mass: 60, material: (function () {
+	                React.createElement(Character_1.default, { gravitator: this.gravitator, scene: this.state.scene, assetsManager: this.assetsManager, addShadows: this.addShadows, register: character => this.character = character, camera: this.camera, keyboard: this.props.settings.keyboard, movementSpeed: this.props.settings.movementSpeed, jumpSpeed: this.props.settings.jumpSpeed }),
+	                React.createElement(ParticleSystem_1.default, { scene: this.state.scene, register: particleSystem => this.particleSystem = particleSystem, capacity: 100, color1: new BABYLON.Color4(.1, .2, .8, 1), color2: new BABYLON.Color4(.2, .3, 1, 1), texture: new BABYLON.Texture("textures/flare.png", this.state.scene) }),
+	                React.createElement(ParticleSystem_1.default, { scene: this.state.scene, register: particleSystem => this.particleSystem2 = particleSystem, capacity: 100, color1: new BABYLON.Color4(1, 1, 1, 1), color2: new BABYLON.Color4(1, 1, 1, 1), texture: new BABYLON.Texture("textures/flare.png", this.state.scene) }),
+	                React.createElement(Sphere_1.default, { scene: this.state.scene, gravitator: this.gravitator, addShadows: this.addShadows, segments: 20, diameter: 60, mass: 30, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.emissiveTexture = new BABYLON.Texture("textures/penguin.png", this.state.scene);
 	                        return material;
 	                    }.bind(this))(), position: new BABYLON.Vector3(0, 10, 0) }),
-	                React.createElement(Sphere_1.default, { scene: this.state.scene, gravitator: this.gravitator, animationRatio: this.gravitator.appliedAnimationRatio, hook: object => this.hook.Sphere = object, segments: 20, diameter: 70, mass: 70, material: (function () {
+	                React.createElement(Sphere_1.default, { scene: this.state.scene, gravitator: this.gravitator, addShadows: this.addShadows, hook: object => this.hook.Sphere = object, segments: 20, diameter: 70, mass: 35, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.diffuseColor = new BABYLON.Color3(.5, 1, .5);
 	                        material.specularColor = new BABYLON.Color3(0, 1, 0);
 	                        material.specularPower = 32;
 	                        return material;
-	                    }.bind(this))(), position: this.state.position }),
-	                React.createElement(Sphere_1.default, { scene: this.state.scene, gravitator: this.gravitator, animationRatio: this.gravitator.appliedAnimationRatio, segments: 20, diameter: 80, mass: 80, material: (function () {
+	                    }.bind(this))(), position: new BABYLON.Vector3(0, 10, 0) }),
+	                React.createElement(Sphere_1.default, { scene: this.state.scene, gravitator: this.gravitator, addShadows: this.addShadows, segments: 20, diameter: 80, mass: 4, material: (function () {
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.diffuseColor = new BABYLON.Color3(1.0, 0.2, 0.7);
 	                        return material;
@@ -26358,7 +26555,11 @@
 	                return (React.createElement("canvas", { id: "renderCanvas", style: { width: "100vw", height: "100vh" } }));
 	            }
 	            else {
-	                return React.createElement("h1", { style: { textAlign: "center", width: "100%", position: "absolute" } }, "WebGL is not supported");
+	                return React.createElement("div", null,
+	                    React.createElement("h1", { style: { textAlign: "center", width: "100%", position: "absolute" } }, "WebGL is not supported"),
+	                    React.createElement("div", { style: { top: 90, textAlign: "center", width: "100%", position: "absolute" } },
+	                        React.createElement("div", null, "If you think it should actually work and you are using Chrome,"),
+	                        React.createElement("div", null, "try enabling the \"Override software rendering list\" by going to chrome://flags")));
 	            }
 	        }
 	    }
@@ -26418,6 +26619,7 @@
 	const BABYLON = __webpack_require__(237);
 	class Gravitator {
 	    constructor() {
+	        this.gravity = -.981;
 	        this.previousAnimationRatio = 1;
 	        this.appliedAnimationRatio = 1;
 	        this.animationRatios = [];
@@ -26437,25 +26639,26 @@
 	        physicalBody.mass = physicalBody.mass * this.appliedAnimationRatio;
 	    }
 	    applyGravity(mesh) {
-	        mesh.applyImpulse(new BABYLON.Vector3(0, -9.81 * this.appliedAnimationRatio * this.appliedAnimationRatio, 0), mesh.position);
+	        mesh.applyImpulse(new BABYLON.Vector3(0, this.gravity * this.appliedAnimationRatio * this.appliedAnimationRatio, 0), mesh.position);
 	    }
 	    pullWithOffset(physicalBody, mesh, stickToGround, height, xOffset = 0, zOffset = 0) {
-	        var pickInfo = this.ground.intersects(new BABYLON.Ray(new BABYLON.Vector3(mesh.position.x + xOffset, mesh.position.y - height, mesh.position.z + zOffset), new BABYLON.Vector3(0, 1, 0)));
+	        var pickInfo = this.ground.intersects(new BABYLON.Ray(new BABYLON.Vector3(mesh.position.x + xOffset, mesh.position.y - height - 5, mesh.position.z + zOffset), new BABYLON.Vector3(0, 1, 0)));
 	        if (pickInfo.hit) {
-	            //If the ground is within 1 of the bottom of the character (sphere diameter of 60)
-	            if (mesh.position.y - height < pickInfo.pickedPoint.y + 20) {
+	            if (mesh.position.y - height < pickInfo.pickedPoint.y + 5) {
 	                this.target.x = 0;
 	                this.target.z = 0;
 	                if (stickToGround) {
 	                    this.target.y = -physicalBody.linearVelocity.y;
 	                }
 	                if (mesh.position.y - height < pickInfo.pickedPoint.y - 1) {
-	                    this.target.y += (mesh.position.y - height - pickInfo.pickedPoint.y) *
+	                    this.target.y += 5 * (mesh.position.y - height - pickInfo.pickedPoint.y) *
 	                        (mesh.position.y - height - pickInfo.pickedPoint.y);
+	                    console.log('up');
 	                }
 	                if (stickToGround && mesh.position.y - height > pickInfo.pickedPoint.y + 1) {
-	                    this.target.y -= (mesh.position.y - height - pickInfo.pickedPoint.y) *
+	                    this.target.y -= 5 * (mesh.position.y - height - pickInfo.pickedPoint.y) *
 	                        (mesh.position.y - height - pickInfo.pickedPoint.y);
+	                    console.log('down');
 	                }
 	                mesh.applyImpulse(this.target, new BABYLON.Vector3(mesh.position.x, mesh.position.y, mesh.position.z));
 	                return true;
@@ -26478,11 +26681,25 @@
 	        }
 	        return false;
 	    }
+	    removeBelowGround(mesh, scene, action) {
+	        var pickInfo = this.ground.intersects(new BABYLON.Ray(new BABYLON.Vector3(mesh.position.x, mesh.position.y, mesh.position.z), new BABYLON.Vector3(0, 1, 0)));
+	        if (pickInfo.hit) {
+	            //If the ground is within 1 of the bottom of the character (sphere diameter of 60)
+	            if (mesh.position.y < pickInfo.pickedPoint.y) {
+	                mesh.dispose();
+	                scene.actionManager.actions = scene.actionManager.actions.filter(i => i != action);
+	                return false;
+	            }
+	        }
+	        return true;
+	    }
 	    registerGravitator(scene) {
-	        scene.registerBeforeRender(function () {
+	        scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
 	            this.previousAnimationRatio = this.appliedAnimationRatio;
 	            this.instantAnimationRatio = scene.getAnimationRatio();
-	            this.animationRatios.push(this.instantAnimationRatio);
+	            if (!isNaN(this.instantAnimationRatio)) {
+	                this.animationRatios.push(this.instantAnimationRatio);
+	            }
 	            if (this.animationRatios.length >= 150) {
 	                this.averageAnimationRatio = this.animationRatios.reduce((a, b) => { return a + b; }) / this.animationRatios.length;
 	                this.appliedAnimationRatio = this.averageAnimationRatio;
@@ -26496,7 +26713,7 @@
 	                    this.appliedAnimationRatio = this.averageAnimationRatio;
 	                }
 	            }
-	        }.bind(this));
+	        }.bind(this)));
 	    }
 	}
 	;
@@ -26513,10 +26730,13 @@
 	const BABYLON = __webpack_require__(237);
 	class Light extends React.Component {
 	    componentDidMount() {
-	        this.light = new BABYLON.HemisphericLight("Hemi0", new BABYLON.Vector3(0, 1, 0), this.props.scene);
-	        this.light.diffuse = new BABYLON.Color3(1, 1, 1);
+	        let hemisphericLight = new BABYLON.HemisphericLight("Hemi0", new BABYLON.Vector3(0, 1, 0), this.props.scene);
+	        hemisphericLight.diffuse = new BABYLON.Color3(.5, .5, .5);
+	        this.light = new BABYLON.PointLight("Omni", new BABYLON.Vector3(0, 1000, 0), this.props.scene);
+	        this.light.diffuse = new BABYLON.Color3(.5, .5, .5);
 	        this.light.specular = new BABYLON.Color3(1, 1, 1);
-	        this.light.groundColor = new BABYLON.Color3(0, 0, 0);
+	        this.props.register(this.light);
+	        this.props.registerShadowGenerator(new BABYLON.ShadowGenerator(8192, this.light));
 	    }
 	    componentWillUnmount() {
 	        this.light.dispose();
@@ -26565,12 +26785,11 @@
 	        this.camera.inertia = 0;
 	        this.camera.angularSensibilityX = mouseSensitivityStart / this.mouseSensitivityX;
 	        this.camera.angularSensibilityY = mouseSensitivityStart / this.mouseSensitivityY;
-	        this.camera.lowerRadiusLimit = 50;
+	        this.camera.lowerRadiusLimit = 200;
 	        this.camera.upperRadiusLimit = 1000;
-	        this.camera.radius = 800;
+	        this.camera.radius = 500;
 	        this.camera.lowerBetaLimit = .1;
 	        this.camera.upperBetaLimit = Math.PI / 2;
-	        this.camera.attachControl(this.props.canvas, true);
 	        this.props.register(this.camera);
 	    }
 	    componentWillUnmount() {
@@ -26614,9 +26833,9 @@
 	class Ground extends React.Component {
 	    componentDidMount() {
 	        this.ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/A1.jpg", 8000, 8000, 50, -500, 500, this.props.scene);
-	        this.ground.position.y = -100;
 	        this.ground.material = this.props.material;
 	        this.ground.setPhysicsState(BABYLON.PhysicsEngine.MeshImpostor, { mass: 0 });
+	        this.ground.receiveShadows = true;
 	        this.props.register(this.ground);
 	    }
 	    componentWillUnmount() {
@@ -26639,18 +26858,27 @@
 	const React = __webpack_require__(1);
 	const BABYLON = __webpack_require__(237);
 	const degreesToRadians_1 = __webpack_require__(243);
+	const ParticleSystem_1 = __webpack_require__(244);
 	class Character extends React.Component {
 	    componentDidMount() {
-	        this.load();
+	        let addCharacterTask = this.props.assetsManager.addMeshTask("add character", "penguin", "babylonjs/", "penguin.babylon");
+	        addCharacterTask.onSuccess = function (task) {
+	            console.log('done');
+	            this.characterMesh = task.loadedMeshes[0];
+	            this.characterMesh.scaling = new BABYLON.Vector3(10, 10, 10);
+	            this.props.register(this.characterMesh);
+	            this.props.addShadows(this.characterMesh);
+	            this.load();
+	        }.bind(this);
+	        this.props.assetsManager.load();
 	    }
 	    componentWillUnmount() {
 	        this.characterMesh.dispose();
 	        this.characterShell.dispose();
+	        this.props.scene.actionManager.actions.slice(this.props.scene.actionManager.actions.findIndex(i => i == this.action), 1);
 	    }
 	    load() {
 	        if (this.props.camera && this.props.gravitator.ground) {
-	            this.characterMesh = this.props.mesh;
-	            this.props.register(this.characterMesh);
 	            this.characterShell = BABYLON.Mesh.CreateSphere("Character", 2, 60, this.props.scene, true);
 	            this.characterShell.isVisible = false;
 	            let shell = this.characterShell.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 100, friction: 100, restitution: .001 });
@@ -26664,7 +26892,6 @@
 	            let shift = false;
 	            let onGround = false;
 	            let canJump = true;
-	            this.props.scene.actionManager = new BABYLON.ActionManager(this.props.scene);
 	            this.props.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function (event) {
 	                if (event.sourceEvent.keyCode == 87) {
 	                    w = true;
@@ -26711,11 +26938,12 @@
 	                    shift = false;
 	                }
 	            }));
-	            this.props.scene.registerBeforeRender(function () {
+	            this.action = this.props.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
+	                this.particleSystem.emitter.position = new BABYLON.Vector3(this.characterMesh.position.x, this.characterMesh.position.y - 20, this.characterMesh.position.z);
 	                this.props.camera.target = this.characterMesh.position;
 	                this.props.gravitator.applyPhysicsZeroDeterioration(shell);
 	                this.props.gravitator.applyGravity(this.characterShell);
-	                onGround = this.props.gravitator.applyGroundConstraints(shell, this.characterShell, 30, canJump);
+	                onGround = this.props.gravitator.applyGroundConstraints(shell, this.characterShell, 10, canJump);
 	                //everything
 	                //Stop rotation of the character in order to apply friction to stop the character without impulse
 	                if (!w && !a && !s && !d
@@ -26753,7 +26981,7 @@
 	                        (a || this.props.keyboard.a) && (!d || !this.props.keyboard.d))) {
 	                    localSpeed = localSpeed * Math.cos(degreesToRadians_1.default(45));
 	                }
-	                if (shift) {
+	                if (shift || this.props.keyboard.shift) {
 	                    localSpeed = localSpeed / 20;
 	                }
 	                if (w || this.props.keyboard.w) {
@@ -26778,9 +27006,9 @@
 	                else {
 	                    this.characterShell.applyImpulse(new BABYLON.Vector3(target.x - current.x, target.y, target.z - current.z), this.characterMesh.position);
 	                }
-	                this.characterMesh.rotation = new BABYLON.Vector3(0, -this.props.camera.alpha + degreesToRadians_1.default(90), 0);
+	                this.characterMesh.rotation = new BABYLON.Vector3(0, -this.props.camera.alpha, 0);
 	                //skull.rotation.x -= 1;
-	            }.bind(this));
+	            }.bind(this)));
 	        }
 	        else {
 	            setTimeout(function () {
@@ -26789,7 +27017,7 @@
 	        }
 	    }
 	    render() {
-	        return null;
+	        return (React.createElement(ParticleSystem_1.default, { scene: this.props.scene, register: particleSystem => this.particleSystem = particleSystem, capacity: 20, color1: new BABYLON.Color4(1, 1, 1, 1), color2: new BABYLON.Color4(1, 1, 1, 1), texture: new BABYLON.Texture("textures/flare.png", this.props.scene) }));
 	    }
 	}
 	Object.defineProperty(exports, "__esModule", { value: true });
@@ -26818,9 +27046,9 @@
 	class ParticleSystem extends React.Component {
 	    componentDidMount() {
 	        let emitter = BABYLON.Mesh.CreateBox("emitter", .1, this.props.scene);
-	        emitter.position = this.props.position;
+	        emitter.position = new BABYLON.Vector3(0, -1000, 0);
 	        emitter.isVisible = false;
-	        let particleSystem = new BABYLON.ParticleSystem("particles", 50, this.props.scene);
+	        let particleSystem = new BABYLON.ParticleSystem("particles", this.props.capacity, this.props.scene);
 	        particleSystem.emitter = emitter;
 	        //texture
 	        particleSystem.particleTexture = this.props.texture;
@@ -26843,7 +27071,7 @@
 	        particleSystem.minEmitPower = 30;
 	        particleSystem.maxEmitPower = 50;
 	        //quantity
-	        particleSystem.emitRate = 100000;
+	        particleSystem.emitRate = 200;
 	        //gravity
 	        particleSystem.gravity = new BABYLON.Vector3(0, -98.1, 0);
 	        //start
@@ -26881,6 +27109,7 @@
 	        this.sphere.checkCollisions = true;
 	        this.sphere.material = this.props.material;
 	        this.sphere.position = this.props.position;
+	        this.props.addShadows(this.sphere);
 	        let physicalSphere = this.sphere.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: this.props.mass, friction: 1 });
 	        //this.sphere.onCollide = event => console.log(event);
 	        var animationBox = new BABYLON.Animation("myAnimation", "scaling.x", 30, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
@@ -26904,14 +27133,15 @@
 	        animationBox.setKeys(keys);
 	        this.sphere.animations.push(animationBox);
 	        //this.props.scene.beginAnimation(this.sphere, 0, 100, true);
-	        this.props.scene.registerBeforeRender(function () {
+	        this.sphereAction = this.props.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
 	            this.props.gravitator.applyPhysics(physicalSphere);
 	            this.props.gravitator.applyGravity(this.sphere);
 	            this.props.gravitator.applyGroundConstraints(physicalSphere, this.sphere, this.props.diameter / 2);
-	        }.bind(this));
+	        }.bind(this)));
 	    }
 	    componentWillUnmount() {
 	        this.sphere.dispose();
+	        this.props.scene.actionManager.actions.slice(this.props.scene.actionManager.actions.findIndex(i => i == this.sphereAction), 1);
 	        this.props.material.dispose();
 	    }
 	    render() {
@@ -26951,11 +27181,218 @@
 
 
 /***/ },
-/* 247 */,
-/* 248 */,
-/* 249 */,
-/* 250 */,
+/* 247 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const React = __webpack_require__(1);
+	const Label_1 = __webpack_require__(248);
+	class Settings extends React.Component {
+	    render() {
+	        if (this.props.showSettings) {
+	            return (React.createElement("div", { style: { height: "100%", width: 400, position: "absolute", right: 0, backgroundColor: "grey", opacity: .9 } },
+	                React.createElement("div", null,
+	                    React.createElement("h1", { style: { textAlign: "center" } }, "Settings"),
+	                    React.createElement("button", { onClick: () => this.props.toggleShowSettings() }, "Close"),
+	                    React.createElement(Label_1.default, { label: "FPS:", control: this.props.framerate }),
+	                    React.createElement(Label_1.default, { label: "Animation Ratio:", control: this.props.animationRatio }),
+	                    React.createElement(Label_1.default, { label: "Movement Speed:", control: this.props.settings.movementSpeed }),
+	                    React.createElement(Label_1.default, { label: "Jump Speed:", control: this.props.settings.jumpSpeed }),
+	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Horizontal Mouse Sensitivity"), control: React.createElement("input", { type: "text", value: this.props.settings.mouse.mouseSensitivityX, onChange: event => this.props.changeSetting("mouse", "mouseSensitivityX", event.target.value) }) }),
+	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Vertical Mouse Sensitivity"), control: React.createElement("input", { type: "text", value: this.props.settings.mouse.mouseSensitivityY, onChange: event => this.props.changeSetting("mouse", "mouseSensitivityY", event.target.value) }) }),
+	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Sticky Right Mouse Click"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.mouse.stickyRightMouseClick, onChange: event => this.props.changeSetting("mouse", "stickyRightMouseClick", !this.props.settings.mouse.stickyRightMouseClick) }) }),
+	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Invert Input X Axis"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.mouse.invertX, onChange: event => this.props.changeSetting("mouse", "invertX", !this.props.settings.mouse.invertX) }) }),
+	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Invert Input Y Axis"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.mouse.invertY, onChange: event => this.props.changeSetting("mouse", "invertY", !this.props.settings.mouse.invertY) }) }),
+	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Invert Touch Input"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.mouse.invertTouch, onChange: event => this.props.changeSetting("mouse", "invertTouch", !this.props.settings.mouse.invertTouch) }) }))));
+	        }
+	        else {
+	            return null;
+	        }
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Settings;
+
+
+/***/ },
+/* 248 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const React = __webpack_require__(1);
+	class Label extends React.Component {
+	    render() {
+	        return (React.createElement("div", { style: { float: "left", padding: 5, width: "100%" } },
+	            React.createElement("div", { style: { width: "50%", float: "left" } }, this.props.label),
+	            React.createElement("div", { style: { width: "50%", float: "left" } }, this.props.control)));
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Label;
+
+
+/***/ },
+/* 249 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const KeyboardClass_1 = __webpack_require__(250);
+	const MouseClass_1 = __webpack_require__(251);
+	class default_1 {
+	    constructor() {
+	        this.movementSpeed = 100;
+	        this.jumpSpeed = 200;
+	        this.keyboard = new KeyboardClass_1.default();
+	        this.mouse = new MouseClass_1.default();
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = default_1;
+
+
+/***/ },
+/* 250 */
+/***/ function(module, exports) {
+
+	"use strict";
+	class default_1 {
+	    constructor() {
+	        this.displayOnScreenKeyboard = false;
+	        this.w = false;
+	        this.a = false;
+	        this.s = false;
+	        this.d = false;
+	        this.shift = false;
+	        this.space = false;
+	        this.control = false;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = default_1;
+
+
+/***/ },
 /* 251 */
+/***/ function(module, exports) {
+
+	"use strict";
+	class default_1 {
+	    constructor() {
+	        this.mouseSensitivityX = 5;
+	        this.mouseSensitivityY = 5;
+	        this.invertX = false;
+	        this.invertY = false;
+	        this.invertTouch = true;
+	        this.stickyRightMouseClick = false;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = default_1;
+
+
+/***/ },
+/* 252 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const React = __webpack_require__(1);
+	class OnScreenKeyboard extends React.Component {
+	    constructor(props) {
+	        super(props);
+	        this.stop = this.stop.bind(this);
+	    }
+	    keyDown(event, settingName) {
+	        event.preventDefault();
+	        if (settingName == "space") {
+	            this.props.changeSetting("keyboard", settingName, !this.props.settings.keyboard.space);
+	        }
+	        else if (settingName == "shift") {
+	            this.props.changeSetting("keyboard", settingName, !this.props.settings.keyboard.shift);
+	        }
+	        else {
+	            this.props.changeSetting("keyboard", settingName, true);
+	        }
+	    }
+	    keyUp(event, settingName) {
+	        event.preventDefault();
+	        this.props.changeSetting("keyboard", settingName, false);
+	    }
+	    renderKey(key, width, height) {
+	        return (React.createElement("div", { style: { float: "left", height: height, width: width, backgroundColor: "rgba(100, 100, 100, .5)" }, onTouchStart: (event) => this.keyDown(event, key), onTouchMove: (event) => this.keyDown(event, key), onTouchEnd: this.stop, onMouseDown: (event) => this.keyDown(event, key), onMouseUp: (event) => this.keyUp(event, key), onMouseOut: (event) => this.keyUp(event, key) }));
+	    }
+	    update(event, size) {
+	        if (event.pageX < size / 2.5) {
+	            if (window.innerHeight - event.pageY < size / 2.5) {
+	                this.props.changeSetting("keyboard", 'z', true);
+	            }
+	            else if (window.innerHeight - event.pageY > size - size / 2.5) {
+	                this.props.changeSetting("keyboard", 'q', true);
+	            }
+	            else {
+	                this.props.changeSetting("keyboard", 'a', true);
+	            }
+	        }
+	        else if (event.pageX > size - size / 2.5) {
+	            if (window.innerHeight - event.pageY < size / 2.5) {
+	                this.props.changeSetting("keyboard", 'c', true);
+	            }
+	            else if (window.innerHeight - event.pageY > size - size / 2.5) {
+	                this.props.changeSetting("keyboard", 'e', true);
+	            }
+	            else {
+	                this.props.changeSetting("keyboard", 'd', true);
+	            }
+	        }
+	        else {
+	            if (window.innerHeight - event.pageY < size / 2.5) {
+	                this.props.changeSetting("keyboard", 's', true);
+	            }
+	            else if (window.innerHeight - event.pageY > size - size / 2.5) {
+	                this.props.changeSetting("keyboard", 'w', true);
+	            }
+	            else {
+	                this.props.changeSetting("keyboard", 'stop', true);
+	            }
+	        }
+	    }
+	    move(event, size) {
+	        event.preventDefault();
+	        if (event.changedTouches) {
+	            for (let i = 0; i < event.changedTouches.length; i++) {
+	                this.update(event.changedTouches[i], size);
+	            }
+	        }
+	        else {
+	            this.update(event, size);
+	        }
+	    }
+	    stop(event) {
+	        event.preventDefault();
+	        this.props.changeSetting("keyboard", 'stop', true);
+	    }
+	    render() {
+	        let min = window.innerHeight < window.innerWidth ? window.innerHeight : window.innerWidth;
+	        if (this.props.settings.keyboard.displayOnScreenKeyboard) {
+	            return (React.createElement("div", null,
+	                React.createElement("canvas", { style: { position: "absolute", left: 0, bottom: 0, zIndex: 1, width: min / 2, height: min / 2 }, onTouchStart: (event) => this.move(event, min / 2), onTouchMove: (event) => this.move(event, min / 2), onTouchEnd: this.stop }),
+	                React.createElement("div", { style: { position: "absolute", left: 2 * min / 10, bottom: 3 * min / 10 } }, this.renderKey("w", min / 10, min / 10)),
+	                React.createElement("div", { style: { position: "absolute", left: min / 10, bottom: 2 * min / 10 } }, this.renderKey("a", min / 10, min / 10)),
+	                React.createElement("div", { style: { position: "absolute", left: 3 * min / 10, bottom: 2 * min / 10 } }, this.renderKey("d", min / 10, min / 10)),
+	                React.createElement("div", { style: { position: "absolute", left: 2 * min / 10, bottom: min / 10 } }, this.renderKey("s", min / 10, min / 10)),
+	                React.createElement("div", { style: { position: "absolute", left: min / 2, bottom: 0 } }, this.renderKey("space", window.innerWidth - 7 * min / 10, min / 10)),
+	                React.createElement("div", { style: { position: "absolute", right: min / 20, bottom: min / 20 } }, this.renderKey("shift", min / 10, min / 4))));
+	        }
+	        else {
+	            return null;
+	        }
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = OnScreenKeyboard;
+
+
+/***/ },
+/* 253 */
 /***/ function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {/**
@@ -27026,17 +27463,6 @@
 	  }
 	};
 	
-	var fiveArgumentPooler = function (a1, a2, a3, a4, a5) {
-	  var Klass = this;
-	  if (Klass.instancePool.length) {
-	    var instance = Klass.instancePool.pop();
-	    Klass.call(instance, a1, a2, a3, a4, a5);
-	    return instance;
-	  } else {
-	    return new Klass(a1, a2, a3, a4, a5);
-	  }
-	};
-	
 	var standardReleaser = function (instance) {
 	  var Klass = this;
 	  !(instance instanceof Klass) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Trying to release an instance into a pool of a different type.') : _prodInvariant('25') : void 0;
@@ -27076,212 +27502,11 @@
 	  oneArgumentPooler: oneArgumentPooler,
 	  twoArgumentPooler: twoArgumentPooler,
 	  threeArgumentPooler: threeArgumentPooler,
-	  fourArgumentPooler: fourArgumentPooler,
-	  fiveArgumentPooler: fiveArgumentPooler
+	  fourArgumentPooler: fourArgumentPooler
 	};
 	
 	module.exports = PooledClass;
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
-
-/***/ },
-/* 252 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	const React = __webpack_require__(1);
-	const Label_1 = __webpack_require__(253);
-	class Settings extends React.Component {
-	    render() {
-	        if (this.props.showSettings) {
-	            return (React.createElement("div", { style: { height: "100%", width: 400, position: "absolute", right: 0, backgroundColor: "grey", opacity: .9 } },
-	                React.createElement("div", null,
-	                    React.createElement("h1", { style: { textAlign: "center" } }, "Settings"),
-	                    React.createElement("button", { onClick: () => this.props.toggleShowSettings() }, "Close"),
-	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "On Screen D-Pad"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.keyboard.displayOnScreenKeyboard, onChange: event => this.props.changeSetting("keyboard", "displayOnScreenKeyboard", !this.props.settings.keyboard.displayOnScreenKeyboard) }) }),
-	                    React.createElement(Label_1.default, { label: "FPS:", control: this.props.framerate }),
-	                    React.createElement(Label_1.default, { label: "Animation Ratio:", control: this.props.animationRatio }),
-	                    React.createElement(Label_1.default, { label: "Movement Speed:", control: this.props.settings.movementSpeed }),
-	                    React.createElement(Label_1.default, { label: "Jump Speed:", control: this.props.settings.jumpSpeed }),
-	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Horizontal Mouse Sensitivity"), control: React.createElement("input", { type: "text", value: this.props.settings.mouse.mouseSensitivityX, onChange: event => this.props.changeSetting("mouse", "mouseSensitivityX", event.target.value) }) }),
-	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Vertical Mouse Sensitivity"), control: React.createElement("input", { type: "text", value: this.props.settings.mouse.mouseSensitivityY, onChange: event => this.props.changeSetting("mouse", "mouseSensitivityY", event.target.value) }) }),
-	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Sticky Right Mouse Click"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.mouse.stickyRightMouseClick, onChange: event => this.props.changeSetting("mouse", "stickyRightMouseClick", !this.props.settings.mouse.stickyRightMouseClick) }) }),
-	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Invert Input X Axis"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.mouse.invertX, onChange: event => this.props.changeSetting("mouse", "invertX", !this.props.settings.mouse.invertX) }) }),
-	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Invert Input Y Axis"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.mouse.invertY, onChange: event => this.props.changeSetting("mouse", "invertY", !this.props.settings.mouse.invertY) }) }),
-	                    React.createElement(Label_1.default, { label: React.createElement("span", null, "Invert Touch Input"), control: React.createElement("input", { type: "checkbox", checked: this.props.settings.mouse.invertTouch, onChange: event => this.props.changeSetting("mouse", "invertTouch", !this.props.settings.mouse.invertTouch) }) }))));
-	        }
-	        else {
-	            return null;
-	        }
-	    }
-	}
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = Settings;
-
-
-/***/ },
-/* 253 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	const React = __webpack_require__(1);
-	class Label extends React.Component {
-	    render() {
-	        return (React.createElement("div", { style: { float: "left", padding: 5, width: "100%" } },
-	            React.createElement("div", { style: { width: "50%", float: "left" } }, this.props.label),
-	            React.createElement("div", { style: { width: "50%", float: "left" } }, this.props.control)));
-	    }
-	}
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = Label;
-
-
-/***/ },
-/* 254 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	const KeyboardClass_1 = __webpack_require__(255);
-	const MouseClass_1 = __webpack_require__(256);
-	class default_1 {
-	    constructor() {
-	        this.movementSpeed = 200;
-	        this.jumpSpeed = 300;
-	        this.keyboard = new KeyboardClass_1.default();
-	        this.mouse = new MouseClass_1.default();
-	    }
-	}
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = default_1;
-
-
-/***/ },
-/* 255 */
-/***/ function(module, exports) {
-
-	"use strict";
-	class default_1 {
-	    constructor() {
-	        this.displayOnScreenKeyboard = true;
-	        this.w = false;
-	        this.a = false;
-	        this.s = false;
-	        this.d = false;
-	        this.shift = false;
-	        this.space = false;
-	        this.control = false;
-	    }
-	}
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = default_1;
-
-
-/***/ },
-/* 256 */
-/***/ function(module, exports) {
-
-	"use strict";
-	class default_1 {
-	    constructor() {
-	        this.mouseSensitivityX = 5;
-	        this.mouseSensitivityY = 5;
-	        this.invertX = false;
-	        this.invertY = false;
-	        this.invertTouch = true;
-	        this.stickyRightMouseClick = false;
-	    }
-	}
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = default_1;
-
-
-/***/ },
-/* 257 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	const React = __webpack_require__(1);
-	class OnScreenKeyboard extends React.Component {
-	    keyDown(event, settingName) {
-	        event.preventDefault();
-	        this.props.changeSetting("keyboard", settingName, true);
-	    }
-	    keyUp(event, settingName) {
-	        event.preventDefault();
-	        this.props.changeSetting("keyboard", settingName, false);
-	    }
-	    renderKey(key, width, height) {
-	        return (React.createElement("div", { style: { float: "left", height: height, width: width, backgroundColor: "grey" }, onTouchStart: (event) => this.keyDown(event, key), onTouchMove: (event) => this.keyDown(event, key), onTouchEnd: this.stop, onMouseDown: (event) => this.keyDown(event, key), onMouseUp: (event) => this.keyUp(event, key), onMouseOut: (event) => this.keyUp(event, key) }));
-	    }
-	    update(event, size) {
-	        if (event.pageX < size / 2.5) {
-	            if (window.innerHeight - event.pageY < size / 2.5) {
-	                this.props.changeSetting("keyboard", 'z', true);
-	            }
-	            else if (window.innerHeight - event.pageY > size - size / 2.5) {
-	                this.props.changeSetting("keyboard", 'q', true);
-	            }
-	            else {
-	                this.props.changeSetting("keyboard", 'a', true);
-	            }
-	        }
-	        else if (event.pageX > size - size / 2.5) {
-	            if (window.innerHeight - event.pageY < size / 2.5) {
-	                this.props.changeSetting("keyboard", 'c', true);
-	            }
-	            else if (window.innerHeight - event.pageY > size - size / 2.5) {
-	                this.props.changeSetting("keyboard", 'e', true);
-	            }
-	            else {
-	                this.props.changeSetting("keyboard", 'd', true);
-	            }
-	        }
-	        else {
-	            if (window.innerHeight - event.pageY < size / 2.5) {
-	                this.props.changeSetting("keyboard", 's', true);
-	            }
-	            else if (window.innerHeight - event.pageY > size - size / 2.5) {
-	                this.props.changeSetting("keyboard", 'w', true);
-	            }
-	            else {
-	                this.props.changeSetting("keyboard", 'stop', true);
-	            }
-	        }
-	    }
-	    move(event, size) {
-	        event.preventDefault();
-	        if (event.changedTouches) {
-	            for (let i = 0; i < event.changedTouches.length; i++) {
-	                this.update(event.changedTouches[i], size);
-	            }
-	        }
-	        else {
-	            this.update(event, size);
-	        }
-	    }
-	    stop(event) {
-	        event.preventDefault();
-	        this.props.changeSetting("keyboard", 'stop', true);
-	    }
-	    render() {
-	        let min = window.innerHeight < window.innerWidth ? window.innerHeight : window.innerWidth;
-	        if (this.props.settings.keyboard.displayOnScreenKeyboard) {
-	            return (React.createElement("div", null,
-	                React.createElement("canvas", { style: { position: "absolute", left: 0, bottom: 0, zIndex: 1, width: min / 2, height: min / 2 }, onTouchStart: (event) => this.move(event, min / 2), onTouchMove: (event) => this.move(event, min / 2), onTouchEnd: this.stop }),
-	                React.createElement("div", { style: { position: "absolute", left: 2 * min / 10, bottom: 3 * min / 10 } }, this.renderKey("w", min / 10, min / 10)),
-	                React.createElement("div", { style: { position: "absolute", left: min / 10, bottom: 2 * min / 10 } }, this.renderKey("a", min / 10, min / 10)),
-	                React.createElement("div", { style: { position: "absolute", left: 3 * min / 10, bottom: 2 * min / 10 } }, this.renderKey("d", min / 10, min / 10)),
-	                React.createElement("div", { style: { position: "absolute", left: 2 * min / 10, bottom: min / 10 } }, this.renderKey("s", min / 10, min / 10)),
-	                React.createElement("div", { style: { position: "absolute", left: window.innerWidth / 4, bottom: 0 } }, this.renderKey("space", window.innerWidth / 2, min / 5)),
-	                React.createElement("div", { style: { position: "absolute", right: min / 20, bottom: min / 20 } }, this.renderKey("shift", min / 6, min / 4))));
-	        }
-	        else {
-	            return null;
-	        }
-	    }
-	}
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = OnScreenKeyboard;
-
 
 /***/ }
 /******/ ])));

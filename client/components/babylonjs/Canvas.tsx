@@ -8,31 +8,30 @@ import Ground from './Mesh/Ground';
 import Character from './Mesh/Character';
 import ParticleSystem from './Mesh/ParticleSystem';
 import Sphere from './Mesh/Sphere';
-import Model from './Mesh/Model';
 import Plane from './Mesh/Plane';
 import SettingsClass from '../shared/classes/SettingsClass';
-
+import degreesToRadians from '../../functions/degreesToRadians';
 interface Props {
   settings: SettingsClass;
+  changeSetting: (groupName: string, settingName: string, settingValue: any) => void;
   invertMouse: () => void;
   setFramerate: (fps: number, animationRatio: number) => void;
 }
 
 interface State {
   scene?: BABYLON.Scene;
-  position?: BABYLON.Vector3;
 }
 
 class Canvas extends React.Component<Props, State> {
   constructor(props) {
     super(props);
     this.state = {
-      position: new BABYLON.Vector3(-30, 0, 0)
     };
 
     this.WebGLSupported = BABYLON.Engine.isSupported();
     this.gravitator = new Gravitator();
 
+    this.addShadows = this.addShadows.bind(this);
     this.pointerLockCallback = this.pointerLockCallback.bind(this);
     this.lockPointer = this.lockPointer.bind(this);
     this.unlockPointer = this.unlockPointer.bind(this);
@@ -40,6 +39,7 @@ class Canvas extends React.Component<Props, State> {
     this.mouseUp = this.mouseUp.bind(this);
     this.mouseDown = this.mouseDown.bind(this);
     this.mouseWheel = this.mouseWheel.bind(this);
+    this.fire = this.fire.bind(this);
   }
   WebGLSupported: boolean;
   gravitator: Gravitator;
@@ -47,19 +47,22 @@ class Canvas extends React.Component<Props, State> {
   assetsLoaded: boolean;
   canvas: HTMLCanvasElement;
   engine: BABYLON.Engine;
+  shadowGenerator: BABYLON.ShadowGenerator;
   assetsManager: BABYLON.AssetsManager;
+  light: BABYLON.PointLight;
   camera: BABYLON.ArcRotateCamera;
   ground: BABYLON.Mesh;
   particleSystem: BABYLON.ParticleSystem;
   particleSystem2: BABYLON.ParticleSystem;
+  particleSystem3: BABYLON.ParticleSystem;
   plane: BABYLON.Mesh;
-  car: BABYLON.Mesh;
   pointerLocked: boolean;
   hook: {
     Sphere?: BABYLON.Mesh
   } = {};
   character: BABYLON.Mesh;
-  skullMesh: BABYLON.Mesh;
+  penguinMesh: BABYLON.Mesh;
+  random: BABYLON.Mesh;
 
   componentDidMount() {
     this.canvas = (document.getElementById("renderCanvas") as HTMLCanvasElement);
@@ -73,54 +76,21 @@ class Canvas extends React.Component<Props, State> {
 
       let scene = this.createScene();
 /*
-      let carTask = this.assetsManager.addMeshTask("car task", "test", "babylonjs/", "skull.babylon");
-      carTask.onSuccess = function(task: any) {
-        this.car = task.loadedMeshes[0];
-        this.car.position = new BABYLON.Vector3(5, 0, 0);
-        let car = this.car.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, {mass: 5, friction: 1});
+      BABYLON.SceneLoader.ImportMesh("penguin", "babylonjs/", "penguin.babylon", scene, function(newMeshes) {
+        this.random = newMeshes[0];
+        this.random.scaling = new BABYLON.Vector3(10, 10, 10);
+        this.random.position.z = 50;
+        this.addShadows(this.random);
+        let random = this.random.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, {mass: 10});
 
-        scene.registerBeforeRender(function () {
-          car.angularVelocity.scaleEqual(.95);
+        this.state.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
+          this.gravitator.applyPhysics(random);
+          this.gravitator.applyGravity(this.random);
+          this.gravitator.applyGroundConstraints(random, this.random, 30);
           //car.linearVelocity.scaleEqual(.9);
-        });
-      }.bind(this);
-*/
-      let addCharacterTask = this.assetsManager.addMeshTask("add character", "test", "babylonjs/", "skull.babylon");
-      addCharacterTask.onSuccess = function(task: any) {
-        this.skullMesh = task.loadedMeshes[0];
-      }.bind(this);
-
-      let addSkullTask = this.assetsManager.addMeshTask("add character", "test", "babylonjs/", "skull.babylon");
-      addSkullTask.onSuccess = function(task: any) {
-        this.car = task.loadedMeshes[0];
-        this.car.position = new BABYLON.Vector3(150, 200, 0);
-        let car = this.car.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, {mass: 100, friction: 100});
-        //this.car.scaling = new BABYLON.Vector3(5, 5, 5);a
-        this.state.scene.registerBeforeRender(function () {
-          this.gravitator.applyPhysics(car);
-          this.gravitator.applyGravity(this.car);
-          this.gravitator.applyGroundConstraints(car, this.car, 30);
-          //car.linearVelocity.scaleEqual(.9);
-        }.bind(this));
-      }.bind(this);
-      /*
-      BABYLON.SceneLoader.Load("babylonjs/", "originalcar.babylon", this.engine, function(newScene) {
-        this.engine.runRenderLoop(function () {
-          newScene.render();
-        });
+        }.bind(this)));
       }.bind(this));
-      */
-
-      /*
-      scene.onPointerDown = function (event, pickResult) {
-        // if the click hits the ground object, we change the impact position
-        if (pickResult.hit) {
-          impact.position.x = pickResult.pickedPoint.x;
-          impact.position.y = pickResult.pickedPoint.y;
-        }
-      };
-      */
-
+*/
       this.setState({scene: scene});
 
       window.addEventListener("resize", function () {
@@ -130,6 +100,8 @@ class Canvas extends React.Component<Props, State> {
       this.assetsManager.onFinish = function (tasks) {
         this.assetsLoaded = true;
         console.log("Finish");
+        this.assetsManager.tasks.length = 0;
+
         this.engine.hideLoadingUI();
         this.engine.runRenderLoop(function () {
           scene.render();
@@ -144,20 +116,37 @@ class Canvas extends React.Component<Props, State> {
     }
   }
 
+  addShadows(mesh: BABYLON.Mesh) {
+    if (this.shadowGenerator) {
+      this.shadowGenerator.getShadowMap().renderList.push(mesh);
+    }
+    else {
+      setTimeout(function() {
+        this.addShadows(mesh);
+      }.bind(this), 50);
+    }
+  }
+
   //Attaches control of the camera only when the pointer is locked to the screen
   //aka only rotates the camera when the mouse is anchored
   pointerLockCallback(event) {
     if (document.pointerLockElement == this.canvas) {
       this.pointerLocked = true;
+      if (this.props.settings.mouse.invertTouch) {
+        this.props.invertMouse();
+      }
     }
     else {
       this.pointerLocked = false;
+      if (this.props.settings.mouse.invertTouch) {
+        this.props.invertMouse();
+      }
     }
   }
 
   mouseDown(event) {
     if (event.nativeEvent.which == 1) {
-      this.camera.detachControl(this.canvas);
+      this.charge();
     }
     if (!this.props.settings.mouse.stickyRightMouseClick && event.nativeEvent.which == 3) {
       this.lockPointer();
@@ -171,9 +160,55 @@ class Canvas extends React.Component<Props, State> {
   }
 
   mouseUp(event) {
+    if (event.nativeEvent.which == 1) {
+      this.fire();
+    }
     if (!this.props.settings.mouse.stickyRightMouseClick && event.nativeEvent.which == 3) {
       this.unlockPointer();
     }
+  }
+
+  charge() {
+
+  }
+
+  fire() {
+    let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
+    material.emissiveColor = new BABYLON.Color3(1, 1, 1);
+    let snowBall = BABYLON.Mesh.CreateSphere("Snowball", 6, 10, this.state.scene, true);
+    this.addShadows(snowBall);
+
+    //snowBall.ellipsoid = new BABYLON.Vector3(1, 1, 1);
+    //snowBall.checkCollisions = true;
+    snowBall.material = material;
+    snowBall.position = new BABYLON.Vector3(this.character.position.x, this.character.position.y + 40, this.character.position.z);
+    this.particleSystem2.emitter.position = snowBall.position;
+    let physicalSnowBall = snowBall.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 1000 } as any);
+    let x = this.particleSystem.emitter.position.x - snowBall.position.x;
+    let y = this.particleSystem.emitter.position.y - snowBall.position.y;
+    let z = this.particleSystem.emitter.position.z - snowBall.position.z;
+    let vector1 = new BABYLON.Vector2(0, 1);
+    //Target position relative to the character
+    let vector2 = new BABYLON.Vector2(x, z);
+    let angle = BABYLON.Angle.BetweenTwoPoints(vector1, vector2);
+    let distance = Math.sqrt(x*x+z*z);
+    let vector3 = new BABYLON.Vector2(distance, y);
+    let verticalAngle = BABYLON.Angle.BetweenTwoPoints(vector1, vector3);
+    let power = 400 * this.gravitator.appliedAnimationRatio;
+
+    snowBall.applyImpulse(
+      new BABYLON.Vector3(
+        power * Math.cos(angle.radians()),
+        distance / 10 + (Math.sin(verticalAngle.radians())) * power,
+        power * Math.sin(angle.radians())
+      ),
+      snowBall.position);
+    let action = this.state.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
+      if (this.gravitator.removeBelowGround(snowBall, this.state.scene, action)) {
+        this.gravitator.applyPhysicsZeroDeterioration(physicalSnowBall);
+        this.gravitator.applyGravity(snowBall);
+      }
+    }.bind(this)));
   }
 
   keyDown(event) {
@@ -184,17 +219,11 @@ class Canvas extends React.Component<Props, State> {
   }
 
   lockPointer() {
-    if (this.props.settings.mouse.invertTouch) {
-      this.props.invertMouse();
-    }
     this.canvas.requestPointerLock();
     this.camera.attachControl(this.canvas, true);
   }
 
   unlockPointer() {
-    if (this.props.settings.mouse.invertTouch) {
-      this.props.invertMouse();
-    }
     document.exitPointerLock();
     this.camera.detachControl(this.canvas);
   }
@@ -212,14 +241,15 @@ class Canvas extends React.Component<Props, State> {
 
   createScene() {
     let scene = new BABYLON.Scene(this.engine);
+    scene.actionManager = new BABYLON.ActionManager(scene);
     this.assetsManager = new BABYLON.AssetsManager(scene);
     scene.collisionsEnabled = true;
-    scene.enablePhysics(new BABYLON.Vector3(0, 0, 0), new BABYLON.OimoJSPlugin() as any);
+    scene.enablePhysics(null, new BABYLON.OimoJSPlugin() as any);
     scene.fogMode = BABYLON.Scene.FOGMODE_EXP2;
     scene.fogDensity = .0003;
 
     //runs every frame
-    scene.registerBeforeRender(function () {
+    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
       this.props.setFramerate(this.engine.getFps(), this.gravitator.appliedAnimationRatio);
       var pickResult = scene.pick(scene.pointerX, scene.pointerY, function (mesh) {
         return mesh.name == "ground";
@@ -229,7 +259,7 @@ class Canvas extends React.Component<Props, State> {
         this.particleSystem.emitter.position = pickResult.pickedPoint;
       }
 
-    }.bind(this));
+    }.bind(this)));
     this.gravitator.registerGravitator(scene);
     return scene;
   }
@@ -241,9 +271,20 @@ class Canvas extends React.Component<Props, State> {
           onKeyDown={this.keyDown}
           onMouseDown={this.mouseDown}
           onMouseUp={this.mouseUp}
-          onTouchStart={() => this.camera.attachControl(this.canvas, true)}
+          onTouchStart={event => {
+            this.camera.attachControl(this.canvas, true);
+            this.fire();
+            this.props.changeSetting("keyboard", "displayOnScreenKeyboard", true);
+            this.shadowGenerator.getShadowMap().resize(1);
+          }}
           onWheel={this.mouseWheel}>
-          <Light scene={this.state.scene} />
+          <Light scene={this.state.scene}
+            register={(light: BABYLON.PointLight) => this.light = light}
+            registerShadowGenerator={(shadowGenerator: BABYLON.ShadowGenerator) =>
+              {
+                shadowGenerator.usePoissonSampling = true;
+                this.shadowGenerator = shadowGenerator;
+              }} />
           <ArcRotateCamera
             scene={this.state.scene}
             register={(camera: BABYLON.ArcRotateCamera) => this.camera = camera}
@@ -442,30 +483,31 @@ class Canvas extends React.Component<Props, State> {
             rotation={new BABYLON.Vector3(Math.PI/2, 0, 0)} />
           <Character gravitator={this.gravitator}
             scene={this.state.scene}
+            assetsManager={this.assetsManager}
+            addShadows={this.addShadows}
             register={character => this.character = character}
-            mesh={this.skullMesh}
             camera={this.camera}
             keyboard={this.props.settings.keyboard}
             movementSpeed={this.props.settings.movementSpeed}
             jumpSpeed={this.props.settings.jumpSpeed} />
           <ParticleSystem scene={this.state.scene}
             register={particleSystem => this.particleSystem = particleSystem}
-            position={new BABYLON.Vector3(0, -10, 0)}
+            capacity={100}
             color1={new BABYLON.Color4(.1, .2, .8, 1)}
             color2={new BABYLON.Color4(.2, .3, 1, 1)}
             texture={new BABYLON.Texture("textures/flare.png", this.state.scene)} />
           <ParticleSystem scene={this.state.scene}
             register={particleSystem => this.particleSystem2 = particleSystem}
-            position={new BABYLON.Vector3(0, -10, 0)}
-            color1={new BABYLON.Color4(.8, .2, .1, 1)}
-            color2={new BABYLON.Color4(1, .3, .2, 1)}
+            capacity={100}
+            color1={new BABYLON.Color4(1, 1, 1, 1)}
+            color2={new BABYLON.Color4(1, 1, 1, 1)}
             texture={new BABYLON.Texture("textures/flare.png", this.state.scene)} />
           <Sphere scene={this.state.scene}
             gravitator={this.gravitator}
-            animationRatio={this.gravitator.appliedAnimationRatio}
+            addShadows={this.addShadows}
             segments={20}
-            diameter={20}
-            mass={60}
+            diameter={60}
+            mass={30}
             material={(function() {
               let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
               material.emissiveTexture = new BABYLON.Texture("textures/penguin.png", this.state.scene);
@@ -474,11 +516,11 @@ class Canvas extends React.Component<Props, State> {
             position={new BABYLON.Vector3(0, 10, 0)} />
           <Sphere scene={this.state.scene}
             gravitator={this.gravitator}
-            animationRatio={this.gravitator.appliedAnimationRatio}
+            addShadows={this.addShadows}
             hook={object => this.hook.Sphere = object}
             segments={20}
             diameter={70}
-            mass={70}
+            mass={35}
             material={(function() {
               let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
               material.diffuseColor = new BABYLON.Color3(.5, 1, .5);
@@ -486,19 +528,20 @@ class Canvas extends React.Component<Props, State> {
               material.specularPower = 32;
               return material;
             }.bind(this))()}
-            position={this.state.position} />
+            position={new BABYLON.Vector3(0, 10, 0)} />
           <Sphere scene={this.state.scene}
             gravitator={this.gravitator}
-            animationRatio={this.gravitator.appliedAnimationRatio}
+            addShadows={this.addShadows}
             segments={20}
             diameter={80}
-            mass={80}
+            mass={4}
             material={(function() {
               let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
               material.diffuseColor = new BABYLON.Color3(1.0, 0.2, 0.7);
               return material;
             }.bind(this))()}
             position={new BABYLON.Vector3(-50, 5, 0)} />
+
         </canvas>
       );
     }
@@ -510,7 +553,17 @@ class Canvas extends React.Component<Props, State> {
         );
       }
       else {
-        return <h1 style={{textAlign: "center", width: "100%", position: "absolute"}}>WebGL is not supported</h1>
+        return <div>
+          <h1 style={{textAlign: "center", width: "100%", position: "absolute"}}>WebGL is not supported</h1>
+          <div style={{top: 90, textAlign: "center", width: "100%", position: "absolute"}}>
+            <div>
+              If you think it should actually work and you are using Chrome,
+            </div>
+            <div>
+              try enabling the "Override software rendering list" by going to chrome://flags
+            </div>
+          </div>
+        </div>
       }
     }
   }

@@ -7,7 +7,7 @@ interface Props {
   texture: BABYLON.Texture;
   color1: BABYLON.Color4;
   color2: BABYLON.Color4;
-  position: BABYLON.Vector3;
+  capacity: number;
 }
 
 class ParticleSystem extends React.Component<Props, {}> {
@@ -15,10 +15,10 @@ class ParticleSystem extends React.Component<Props, {}> {
 
   componentDidMount() {
     let emitter = BABYLON.Mesh.CreateBox("emitter", .1, this.props.scene);
-    emitter.position = this.props.position;
+    emitter.position = new BABYLON.Vector3(0, -1000, 0);
     emitter.isVisible = false;
 
-    let particleSystem = new BABYLON.ParticleSystem("particles", 50, this.props.scene);
+    let particleSystem = new BABYLON.ParticleSystem("particles", this.props.capacity, this.props.scene);
     particleSystem.emitter = emitter;
     //texture
     particleSystem.particleTexture = this.props.texture;
@@ -50,7 +50,7 @@ class ParticleSystem extends React.Component<Props, {}> {
     particleSystem.maxEmitPower = 50;
 
     //quantity
-    particleSystem.emitRate = 100000;
+    particleSystem.emitRate = 200;
 
     //gravity
     particleSystem.gravity = new BABYLON.Vector3(0, -98.1, 0);
