@@ -26231,6 +26231,7 @@
 	const ParticleSystem_1 = __webpack_require__(244);
 	const Sphere_1 = __webpack_require__(245);
 	const Plane_1 = __webpack_require__(246);
+	const Snowman_1 = __webpack_require__(254);
 	class Canvas extends React.Component {
 	    constructor(props) {
 	        super(props);
@@ -26401,7 +26402,7 @@
 	        scene.actionManager = new BABYLON.ActionManager(scene);
 	        this.assetsManager = new BABYLON.AssetsManager(scene);
 	        scene.collisionsEnabled = true;
-	        scene.enablePhysics(null, new BABYLON.OimoJSPlugin());
+	        scene.enablePhysics(new BABYLON.Vector3(0, 0, 0), new BABYLON.OimoJSPlugin());
 	        scene.fogMode = BABYLON.Scene.FOGMODE_EXP2;
 	        scene.fogDensity = .0003;
 	        //runs every frame
@@ -26548,7 +26549,8 @@
 	                        let material = new BABYLON.StandardMaterial("texture1", this.state.scene);
 	                        material.diffuseColor = new BABYLON.Color3(1.0, 0.2, 0.7);
 	                        return material;
-	                    }.bind(this))(), position: new BABYLON.Vector3(-50, 5, 0) })));
+	                    }.bind(this))(), position: new BABYLON.Vector3(-50, 5, 0) }),
+	                React.createElement(Snowman_1.default, { scene: this.state.scene, addShadows: this.addShadows, assetsManager: this.assetsManager, gravitator: this.gravitator, startPosition: new BABYLON.Vector3(-100, 0, 0), target: new BABYLON.Vector3(0, 0, 0) })));
 	        }
 	        else {
 	            if (this.WebGLSupported) {
@@ -26642,31 +26644,40 @@
 	        mesh.applyImpulse(new BABYLON.Vector3(0, this.gravity * this.appliedAnimationRatio * this.appliedAnimationRatio, 0), mesh.position);
 	    }
 	    pullWithOffset(physicalBody, mesh, stickToGround, height, xOffset = 0, zOffset = 0) {
-	        var pickInfo = this.ground.intersects(new BABYLON.Ray(new BABYLON.Vector3(mesh.position.x + xOffset, mesh.position.y - height - 5, mesh.position.z + zOffset), new BABYLON.Vector3(0, 1, 0)));
+	        var pickInfo = this.ground.intersects(new BABYLON.Ray(new BABYLON.Vector3(mesh.position.x + xOffset, mesh.position.y - height - 20, mesh.position.z + zOffset), new BABYLON.Vector3(0, 1, 0)));
 	        if (pickInfo.hit) {
-	            if (mesh.position.y - height < pickInfo.pickedPoint.y + 5) {
-	                this.target.x = 0;
-	                this.target.z = 0;
-	                if (stickToGround) {
-	                    this.target.y = -physicalBody.linearVelocity.y;
-	                }
+	            if (mesh.position.y - height < pickInfo.pickedPoint.y + 20) {
 	                if (mesh.position.y - height < pickInfo.pickedPoint.y - 1) {
-	                    this.target.y += 5 * (mesh.position.y - height - pickInfo.pickedPoint.y) *
-	                        (mesh.position.y - height - pickInfo.pickedPoint.y);
-	                    console.log('up');
+	                    this.target.y = 0;
+	                    //this.target.x = 0;
+	                    //this.target.z = 0;
+	                    if (stickToGround) {
+	                        this.target.y = -physicalBody.linearVelocity.y;
+	                    }
+	                    this.target.y += (pickInfo.pickedPoint.y - (mesh.position.y - height)) *
+	                        (pickInfo.pickedPoint.y - (mesh.position.y - height));
+	                    mesh.applyImpulse(this.target, new BABYLON.Vector3(mesh.position.x, mesh.position.y, mesh.position.z));
 	                }
 	                if (stickToGround && mesh.position.y - height > pickInfo.pickedPoint.y + 1) {
-	                    this.target.y -= 5 * (mesh.position.y - height - pickInfo.pickedPoint.y) *
-	                        (mesh.position.y - height - pickInfo.pickedPoint.y);
-	                    console.log('down');
+	                    this.target.y = 0;
+	                    if (stickToGround) {
+	                        this.target.y = -physicalBody.linearVelocity.y;
+	                    }
+	                    //this.target.x = 0;
+	                    //this.target.z = 0;
+	                    this.target.y -= (pickInfo.pickedPoint.y - (mesh.position.y - height)) *
+	                        (pickInfo.pickedPoint.y - (mesh.position.y - height));
+	                    mesh.applyImpulse(this.target, new BABYLON.Vector3(mesh.position.x, mesh.position.y, mesh.position.z));
 	                }
-	                mesh.applyImpulse(this.target, new BABYLON.Vector3(mesh.position.x, mesh.position.y, mesh.position.z));
 	                return true;
 	            }
 	        }
+	        else {
+	            this.applyGravity(mesh);
+	        }
 	        return false;
 	    }
-	    applyGroundConstraints(physicalBody, mesh, height = 5, stickToGround = true) {
+	    applyGravityWithGroundConstraints(physicalBody, mesh, height = 5, stickToGround = true) {
 	        if (this.ground) {
 	            return this.pullWithOffset(physicalBody, mesh, stickToGround, height);
 	        }
@@ -26883,6 +26894,7 @@
 	            this.characterShell.isVisible = false;
 	            let shell = this.characterShell.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 100, friction: 100, restitution: .001 });
 	            this.characterShell.position = this.characterMesh.position;
+	            this.characterShell.position.x += 100;
 	            let w = false;
 	            let a = false;
 	            let s = false;
@@ -26942,8 +26954,7 @@
 	                this.particleSystem.emitter.position = new BABYLON.Vector3(this.characterMesh.position.x, this.characterMesh.position.y - 20, this.characterMesh.position.z);
 	                this.props.camera.target = this.characterMesh.position;
 	                this.props.gravitator.applyPhysicsZeroDeterioration(shell);
-	                this.props.gravitator.applyGravity(this.characterShell);
-	                onGround = this.props.gravitator.applyGroundConstraints(shell, this.characterShell, 10, canJump);
+	                onGround = this.props.gravitator.applyGravityWithGroundConstraints(shell, this.characterShell, 10, canJump);
 	                //everything
 	                //Stop rotation of the character in order to apply friction to stop the character without impulse
 	                if (!w && !a && !s && !d
@@ -27135,8 +27146,7 @@
 	        //this.props.scene.beginAnimation(this.sphere, 0, 100, true);
 	        this.sphereAction = this.props.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
 	            this.props.gravitator.applyPhysics(physicalSphere);
-	            this.props.gravitator.applyGravity(this.sphere);
-	            this.props.gravitator.applyGroundConstraints(physicalSphere, this.sphere, this.props.diameter / 2);
+	            this.props.gravitator.applyGravityWithGroundConstraints(physicalSphere, this.sphere, this.props.diameter / 2);
 	        }.bind(this)));
 	    }
 	    componentWillUnmount() {
@@ -27241,7 +27251,7 @@
 	class default_1 {
 	    constructor() {
 	        this.movementSpeed = 100;
-	        this.jumpSpeed = 200;
+	        this.jumpSpeed = 100;
 	        this.keyboard = new KeyboardClass_1.default();
 	        this.mouse = new MouseClass_1.default();
 	    }
@@ -27507,6 +27517,49 @@
 	
 	module.exports = PooledClass;
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
+
+/***/ },
+/* 254 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const React = __webpack_require__(1);
+	const BABYLON = __webpack_require__(237);
+	class Snowman extends React.Component {
+	    componentDidMount() {
+	        console.log('mount');
+	        BABYLON.SceneLoader.ImportMesh("penguin", "babylonjs/", "penguin.babylon", this.props.scene, function (newMeshes) {
+	            this.shell = BABYLON.Mesh.CreateSphere("Character", 2, 50, this.props.scene, true);
+	            this.shell.isVisible = false;
+	            this.shell.position = new BABYLON.Vector3(this.props.startPosition.x, this.props.startPosition.y, this.props.startPosition.z);
+	            let body = this.shell.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 50 });
+	            this.model = newMeshes[0];
+	            this.model.position = this.shell.position;
+	            this.model.scaling = new BABYLON.Vector3(10, 10, 10);
+	            this.props.addShadows(this.model);
+	            this.action = this.props.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
+	                this.props.gravitator.applyPhysics(body);
+	                //this.props.gravitator.applyGravity(this.shell);
+	                this.props.gravitator.applyGravityWithGroundConstraints(body, this.shell, 10);
+	                /*if (this.props.target.x != 0 || this.props.target.y != 0 || this.props.target.z != 0) {
+	                  this.model.applyImpulse(this.props.target);
+	                }*/
+	                //car.linearVelocity.scaleEqual(.9);
+	            }.bind(this)));
+	        }.bind(this));
+	    }
+	    componentWillUnmount() {
+	        console.log('unmount');
+	        this.props.scene.actionManager.actions.slice(this.props.scene.actionManager.actions.findIndex(i => i == this.action), 1);
+	        this.model.dispose();
+	    }
+	    render() {
+	        return null;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Snowman;
+
 
 /***/ }
 /******/ ])));

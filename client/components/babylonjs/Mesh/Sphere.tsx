@@ -63,8 +63,7 @@ class Sphere extends React.Component<Props, {}> {
 
     this.sphereAction = this.props.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
       this.props.gravitator.applyPhysics(physicalSphere);
-      this.props.gravitator.applyGravity(this.sphere);
-      this.props.gravitator.applyGroundConstraints(physicalSphere, this.sphere, this.props.diameter/2);
+      this.props.gravitator.applyGravityWithGroundConstraints(physicalSphere, this.sphere, this.props.diameter/2);
     }.bind(this)));
   }
 

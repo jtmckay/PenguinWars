@@ -9,6 +9,7 @@ import Character from './Mesh/Character';
 import ParticleSystem from './Mesh/ParticleSystem';
 import Sphere from './Mesh/Sphere';
 import Plane from './Mesh/Plane';
+import Snowman from './Mesh/Snowman';
 import SettingsClass from '../shared/classes/SettingsClass';
 import degreesToRadians from '../../functions/degreesToRadians';
 interface Props {
@@ -244,7 +245,7 @@ class Canvas extends React.Component<Props, State> {
     scene.actionManager = new BABYLON.ActionManager(scene);
     this.assetsManager = new BABYLON.AssetsManager(scene);
     scene.collisionsEnabled = true;
-    scene.enablePhysics(null, new BABYLON.OimoJSPlugin() as any);
+    scene.enablePhysics(new BABYLON.Vector3(0, 0, 0), new BABYLON.OimoJSPlugin() as any);
     scene.fogMode = BABYLON.Scene.FOGMODE_EXP2;
     scene.fogDensity = .0003;
 
@@ -541,7 +542,12 @@ class Canvas extends React.Component<Props, State> {
               return material;
             }.bind(this))()}
             position={new BABYLON.Vector3(-50, 5, 0)} />
-
+          <Snowman scene={this.state.scene}
+            addShadows={this.addShadows}
+            assetsManager={this.assetsManager}
+            gravitator={this.gravitator}
+            startPosition={new BABYLON.Vector3(-100, 0, 0)}
+            target={new BABYLON.Vector3(0,0,0)} />
         </canvas>
       );
     }

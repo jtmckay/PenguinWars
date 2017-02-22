@@ -49,6 +49,7 @@ class Character extends React.Component<Props, {}> {
       let shell = this.characterShell.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor,
         {mass: 100, friction: 100, restitution: .001});
       this.characterShell.position = this.characterMesh.position;
+      this.characterShell.position.x += 100;
 
       let w = false;
       let a = false;
@@ -112,8 +113,7 @@ class Character extends React.Component<Props, {}> {
         this.particleSystem.emitter.position = new BABYLON.Vector3(this.characterMesh.position.x, this.characterMesh.position.y -20, this.characterMesh.position.z);
         this.props.camera.target = this.characterMesh.position;
         this.props.gravitator.applyPhysicsZeroDeterioration(shell);
-        this.props.gravitator.applyGravity(this.characterShell);
-        onGround = this.props.gravitator.applyGroundConstraints(shell, this.characterShell, 10, canJump);
+        onGround = this.props.gravitator.applyGravityWithGroundConstraints(shell, this.characterShell, 10, canJump);
         //everything
         //Stop rotation of the character in order to apply friction to stop the character without impulse
         if (!w && !a && !s && !d

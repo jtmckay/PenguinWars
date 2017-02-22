@@ -27,12 +27,13 @@ class Snowman extends React.Component<Props, {}> {
 
       this.model = newMeshes[0];
       this.model.position = this.shell.position;
+      this.model.scaling = new BABYLON.Vector3(10, 10, 10);
       this.props.addShadows(this.model);
 
       this.action = this.props.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
         this.props.gravitator.applyPhysics(body);
-        this.props.gravitator.applyGravity(this.shell);
-        this.props.gravitator.applyGroundConstraints(body, this.shell, 10);
+        //this.props.gravitator.applyGravity(this.shell);
+        this.props.gravitator.applyGravityWithGroundConstraints(body, this.shell, 10);
         /*if (this.props.target.x != 0 || this.props.target.y != 0 || this.props.target.z != 0) {
           this.model.applyImpulse(this.props.target);
         }*/

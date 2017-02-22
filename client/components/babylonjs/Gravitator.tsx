@@ -39,38 +39,47 @@ class Gravitator {
   pullWithOffset(physicalBody, mesh: BABYLON.Mesh, stickToGround: boolean, height: number, xOffset: number = 0, zOffset: number = 0) {
     var pickInfo = this.ground.intersects(
       new BABYLON.Ray(
-        new BABYLON.Vector3(mesh.position.x + xOffset, mesh.position.y - height - 5, mesh.position.z + zOffset),
+        new BABYLON.Vector3(mesh.position.x + xOffset, mesh.position.y - height - 20, mesh.position.z + zOffset),
         new BABYLON.Vector3(0, 1, 0)
       ));
     if (pickInfo.hit) {
-      if (mesh.position.y - height < pickInfo.pickedPoint.y + 5) {
-        this.target.x = 0;
-        this.target.z = 0;
-        if (stickToGround) {
-          this.target.y = -physicalBody.linearVelocity.y;
-        }
+      if (mesh.position.y - height < pickInfo.pickedPoint.y + 20) {
         if (mesh.position.y - height < pickInfo.pickedPoint.y - 1) {
-          this.target.y += 5 * (mesh.position.y - height - pickInfo.pickedPoint.y) *
-            (mesh.position.y - height - pickInfo.pickedPoint.y);
-            console.log('up');
+          this.target.y = 0;
+          //this.target.x = 0;
+          //this.target.z = 0;
+          if (stickToGround) {
+            this.target.y = -physicalBody.linearVelocity.y;
+          }
+          this.target.y += (pickInfo.pickedPoint.y - (mesh.position.y - height)) *
+            (pickInfo.pickedPoint.y - (mesh.position.y - height));
+          mesh.applyImpulse(this.target, new BABYLON.Vector3(mesh.position.x, mesh.position.y, mesh.position.z));
           //this.target.x = xOffset / (pickInfo.pickedPoint.y - (mesh.position.y - height));
           //this.target.z = zOffset / (pickInfo.pickedPoint.y - (mesh.position.y - height));
         }
         if (stickToGround && mesh.position.y - height > pickInfo.pickedPoint.y + 1) {
-          this.target.y -= 5 * (mesh.position.y - height - pickInfo.pickedPoint.y) *
-            (mesh.position.y - height - pickInfo.pickedPoint.y);
-            console.log('down');
+          this.target.y = 0;
+          if (stickToGround) {
+            this.target.y = -physicalBody.linearVelocity.y;
+          }
+          //this.target.x = 0;
+          //this.target.z = 0;
+          this.target.y -= (pickInfo.pickedPoint.y - (mesh.position.y - height)) *
+            (pickInfo.pickedPoint.y - (mesh.position.y - height));
+          mesh.applyImpulse(this.target, new BABYLON.Vector3(mesh.position.x, mesh.position.y, mesh.position.z));
           //this.target.x = -xOffset / (pickInfo.pickedPoint.y - (mesh.position.y - height));
           //this.target.z = -zOffset / (pickInfo.pickedPoint.y - (mesh.position.y - height));
         }
-        mesh.applyImpulse(this.target, new BABYLON.Vector3(mesh.position.x, mesh.position.y, mesh.position.z));
         return true;
       }
+    }
+    else {
+      this.applyGravity(mesh);
     }
     return false;
   }
 
-  applyGroundConstraints(physicalBody, mesh: BABYLON.Mesh, height: number = 5, stickToGround: boolean = true): boolean {
+  applyGravityWithGroundConstraints(physicalBody, mesh: BABYLON.Mesh, height: number = 5, stickToGround: boolean = true): boolean {
     if (this.ground) {
       return this.pullWithOffset(physicalBody, mesh, stickToGround, height);
     }
