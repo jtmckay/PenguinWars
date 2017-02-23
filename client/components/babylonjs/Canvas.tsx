@@ -10,7 +10,7 @@ import ParticleSystem from './Mesh/ParticleSystem';
 import Sphere from './Mesh/Sphere';
 import Plane from './Mesh/Plane';
 import Snowman from './Mesh/Snowman';
-import SettingsClass from '../shared/classes/SettingsClass';
+import SettingsClass from '../../classes/SettingsClass';
 import degreesToRadians from '../../functions/degreesToRadians';
 interface Props {
   settings: SettingsClass;

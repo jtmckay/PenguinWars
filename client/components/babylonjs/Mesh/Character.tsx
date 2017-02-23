@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as BABYLON from 'babylonjs';
 import Gravitator from '../Gravitator';
 import degreesToRadians from '../../../functions/degreesToRadians';
-import KeyboardClass from '../../shared/classes/KeyboardClass';
+import KeyboardClass from '../../../classes/KeyboardClass';
 import ParticleSystem from './ParticleSystem';
 
 interface Props {

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import SettingsClass from './classes/SettingsClass';
+import SettingsClass from '../../classes/SettingsClass';
 
 interface Props {
   settings: SettingsClass;

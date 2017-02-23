@@ -1,16 +1,11 @@
 import * as React from 'react';
 import * as BABYLON from 'babylonjs';
 import { Link } from 'react-router';
-import Canvas from '../babylonjs/Canvas';
-import Settings from '../settings/Settings';
-import SettingsClass from '../shared/classes/SettingsClass';
-import OnScreenKeyboard from '../shared/OnScreenKeyboard';
+import Canvas from '../../functions/babylonjs/Canvas';
 
 interface State {
   showSettings?: boolean;
   animationRatio?: number;
-  framerate?: number;
-  settings?: SettingsClass;
 }
 
 class HomePage extends React.Component<{}, State> {
@@ -20,12 +15,14 @@ class HomePage extends React.Component<{}, State> {
     this.state ={
       showSettings: false,
       animationRatio: 1,
-      settings: new SettingsClass()
     };
 
     this.keyDown = this.keyDown.bind(this);
     this.changeSetting = this.changeSetting.bind(this);
+
+    this.canvasOptions = Canvas();
   }
+  canvasOptions;
 
   keyDown(event) {
     if (event.key == 'Escape') {
@@ -91,30 +88,11 @@ class HomePage extends React.Component<{}, State> {
         }
       }
     }
-    newGroup[groupName] = Object.assign({}, this.state.settings[groupName], newSetting);
-    this.setState({ settings: Object.assign({}, this.state.settings, newGroup)});
   }
 
   render() {
     return (
       <div onKeyDown={this.keyDown}>
-        <OnScreenKeyboard settings={this.state.settings}
-          changeSetting={this.changeSetting} />
-        <Settings framerate={this.state.framerate}
-          animationRatio={this.state.animationRatio}
-          settings={this.state.settings}
-          toggleShowSettings={() => this.setState({showSettings: !this.state.showSettings})}
-          changeSetting={this.changeSetting}
-          showSettings={this.state.showSettings} />
-        <Canvas settings={this.state.settings}
-          changeSetting={this.changeSetting}
-          invertMouse={() => this.setState({ settings:
-            Object.assign({}, this.state.settings,
-              {mouse: Object.assign({}, this.state.settings.mouse,
-                {mouseSensitivityX: -this.state.settings.mouse.mouseSensitivityX,
-                  mouseSensitivityY: -this.state.settings.mouse.mouseSensitivityY})})})}
-          setFramerate={(fps: number, animationRatio: number) =>
-            this.setState({framerate: fps, animationRatio: animationRatio }) } />
       </div>
     );
   }

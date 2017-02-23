@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Link } from 'react-router';
 import Canvas from '../babylonjs/Canvas';
 import Label from '../shared/Label';
-import SettingsClass from '../shared/classes/SettingsClass';
+import SettingsClass from '../../classes/SettingsClass';
 
 interface Props {
   showSettings: boolean;
