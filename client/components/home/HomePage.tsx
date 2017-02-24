@@ -5,22 +5,22 @@ import Canvas from '../../functions/babylonjs/Canvas';
 
 interface State {
   showSettings?: boolean;
-  animationRatio?: number;
+  showKeyboard?: boolean;
 }
 
 class HomePage extends React.Component<{}, State> {
   constructor(props) {
     super(props);
 
-    this.state ={
-      showSettings: false,
-      animationRatio: 1,
-    };
-
     this.keyDown = this.keyDown.bind(this);
     this.changeSetting = this.changeSetting.bind(this);
 
     this.canvasOptions = Canvas();
+
+    this.state ={
+      showSettings: this.canvasOptions.showSettings,
+      showKeyboard: this.canvasOptions.showKeyboard
+    };
   }
   canvasOptions;
 

@@ -1,4 +1,5 @@
 import * as BABYLON from 'babylonjs';
+import Settings from '../../classes/Settings';
 import createScene from './Scene';
 import createArcRotateCamera from './Camera';
 import createParticleSystem from './Meshes/ParticleSystem';
@@ -9,8 +10,12 @@ import MouseControl from '../../classes/MouseControl';
 export default function () {
   let canvas = (document.getElementById("renderCanvas") as HTMLCanvasElement);
 
-  let options = {
-    invertCameraOnTouch: false
+  let options: Settings = {
+    movementSpeed: 100,
+    jumpSpeed: 100,
+    invertCameraOnTouch: false,
+    showSettings: false,
+    showKeyboard: false,
   };
 
   if (BABYLON.Engine.isSupported()) {
@@ -22,7 +27,7 @@ export default function () {
 
     let hemisphericLight = createHemisphericLight(scene);
     let light = createLight(scene);
-    let shadowGenerator = new BABYLON.ShadowGenerator(8192, light);
+    let shadowGenerator = new BABYLON.ShadowGenerator(4096, light);
 
     let camera = createArcRotateCamera(scene, BABYLON.Vector3.Zero());
     let mouseControl = new MouseControl(canvas, camera, options.invertCameraOnTouch);
@@ -58,7 +63,7 @@ export default function () {
         particleSystem.emitter.position = pickResult.pickedPoint;
       }
 
-    }.bind(this)));
+    }));
   /*
     BABYLON.SceneLoader.ImportMesh("penguin", "babylonjs/", "penguin.babylon", scene, function(newMeshes) {
       this.random = newMeshes[0];
@@ -102,9 +107,8 @@ export default function () {
       //addShadows(this.characterMesh);
       shadowGenerator.getShadowMap().renderList.push(characterMesh);
       //this.load();
-    }.bind(this);
+    };
     assetsManager.load();
   }
-
   return options;
 }

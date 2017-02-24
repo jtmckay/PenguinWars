@@ -659,7 +659,7 @@
 
 /***/ },
 /* 6 */
-[242, 7],
+[245, 7],
 /* 7 */
 /***/ function(module, exports) {
 
@@ -6371,7 +6371,7 @@
 
 /***/ },
 /* 50 */
-[242, 35],
+[245, 35],
 /* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -26123,17 +26123,17 @@
 
 	"use strict";
 	const React = __webpack_require__(1);
-	const Canvas_1 = __webpack_require__(243);
+	const Canvas_1 = __webpack_require__(236);
 	class HomePage extends React.Component {
 	    constructor(props) {
 	        super(props);
-	        this.state = {
-	            showSettings: false,
-	            animationRatio: 1,
-	        };
 	        this.keyDown = this.keyDown.bind(this);
 	        this.changeSetting = this.changeSetting.bind(this);
 	        this.canvasOptions = Canvas_1.default();
+	        this.state = {
+	            showSettings: this.canvasOptions.showSettings,
+	            showKeyboard: this.canvasOptions.showKeyboard
+	        };
 	    }
 	    keyDown(event) {
 	        if (event.key == 'Escape') {
@@ -26208,144 +26208,25 @@
 
 
 /***/ },
-/* 236 */,
-/* 237 */,
-/* 238 */,
-/* 239 */,
-/* 240 */,
-/* 241 */,
-/* 242 */
-/***/ function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
-
-	/* WEBPACK VAR INJECTION */(function(process) {/**
-	 * Copyright 2013-present, Facebook, Inc.
-	 * All rights reserved.
-	 *
-	 * This source code is licensed under the BSD-style license found in the
-	 * LICENSE file in the root directory of this source tree. An additional grant
-	 * of patent rights can be found in the PATENTS file in the same directory.
-	 *
-	 * 
-	 */
-	
-	'use strict';
-	
-	var _prodInvariant = __webpack_require__(__webpack_module_template_argument_0__);
-	
-	var invariant = __webpack_require__(8);
-	
-	/**
-	 * Static poolers. Several custom versions for each potential number of
-	 * arguments. A completely generic pooler is easy to implement, but would
-	 * require accessing the `arguments` object. In each of these, `this` refers to
-	 * the Class itself, not an instance. If any others are needed, simply add them
-	 * here, or in their own files.
-	 */
-	var oneArgumentPooler = function (copyFieldsFrom) {
-	  var Klass = this;
-	  if (Klass.instancePool.length) {
-	    var instance = Klass.instancePool.pop();
-	    Klass.call(instance, copyFieldsFrom);
-	    return instance;
-	  } else {
-	    return new Klass(copyFieldsFrom);
-	  }
-	};
-	
-	var twoArgumentPooler = function (a1, a2) {
-	  var Klass = this;
-	  if (Klass.instancePool.length) {
-	    var instance = Klass.instancePool.pop();
-	    Klass.call(instance, a1, a2);
-	    return instance;
-	  } else {
-	    return new Klass(a1, a2);
-	  }
-	};
-	
-	var threeArgumentPooler = function (a1, a2, a3) {
-	  var Klass = this;
-	  if (Klass.instancePool.length) {
-	    var instance = Klass.instancePool.pop();
-	    Klass.call(instance, a1, a2, a3);
-	    return instance;
-	  } else {
-	    return new Klass(a1, a2, a3);
-	  }
-	};
-	
-	var fourArgumentPooler = function (a1, a2, a3, a4) {
-	  var Klass = this;
-	  if (Klass.instancePool.length) {
-	    var instance = Klass.instancePool.pop();
-	    Klass.call(instance, a1, a2, a3, a4);
-	    return instance;
-	  } else {
-	    return new Klass(a1, a2, a3, a4);
-	  }
-	};
-	
-	var standardReleaser = function (instance) {
-	  var Klass = this;
-	  !(instance instanceof Klass) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Trying to release an instance into a pool of a different type.') : _prodInvariant('25') : void 0;
-	  instance.destructor();
-	  if (Klass.instancePool.length < Klass.poolSize) {
-	    Klass.instancePool.push(instance);
-	  }
-	};
-	
-	var DEFAULT_POOL_SIZE = 10;
-	var DEFAULT_POOLER = oneArgumentPooler;
-	
-	/**
-	 * Augments `CopyConstructor` to be a poolable class, augmenting only the class
-	 * itself (statically) not adding any prototypical fields. Any CopyConstructor
-	 * you give this may have a `poolSize` property, and will look for a
-	 * prototypical `destructor` on instances.
-	 *
-	 * @param {Function} CopyConstructor Constructor that can be used to reset.
-	 * @param {Function} pooler Customizable pooler.
-	 */
-	var addPoolingTo = function (CopyConstructor, pooler) {
-	  // Casting as any so that flow ignores the actual implementation and trusts
-	  // it to match the type we declared
-	  var NewKlass = CopyConstructor;
-	  NewKlass.instancePool = [];
-	  NewKlass.getPooled = pooler || DEFAULT_POOLER;
-	  if (!NewKlass.poolSize) {
-	    NewKlass.poolSize = DEFAULT_POOL_SIZE;
-	  }
-	  NewKlass.release = standardReleaser;
-	  return NewKlass;
-	};
-	
-	var PooledClass = {
-	  addPoolingTo: addPoolingTo,
-	  oneArgumentPooler: oneArgumentPooler,
-	  twoArgumentPooler: twoArgumentPooler,
-	  threeArgumentPooler: threeArgumentPooler,
-	  fourArgumentPooler: fourArgumentPooler
-	};
-	
-	module.exports = PooledClass;
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
-
-/***/ },
-/* 243 */
+/* 236 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const BABYLON = __webpack_require__(244);
-	const Scene_1 = __webpack_require__(245);
-	const Camera_1 = __webpack_require__(246);
-	const ParticleSystem_1 = __webpack_require__(247);
-	const Walls_1 = __webpack_require__(248);
-	const Light_1 = __webpack_require__(250);
-	const MouseControl_1 = __webpack_require__(251);
+	const BABYLON = __webpack_require__(237);
+	const Scene_1 = __webpack_require__(238);
+	const Camera_1 = __webpack_require__(239);
+	const ParticleSystem_1 = __webpack_require__(240);
+	const Walls_1 = __webpack_require__(241);
+	const Light_1 = __webpack_require__(243);
+	const MouseControl_1 = __webpack_require__(244);
 	function default_1() {
 	    let canvas = document.getElementById("renderCanvas");
 	    let options = {
-	        invertCameraOnTouch: false
+	        movementSpeed: 100,
+	        jumpSpeed: 100,
+	        invertCameraOnTouch: false,
+	        showSettings: false,
+	        showKeyboard: false,
 	    };
 	    if (BABYLON.Engine.isSupported()) {
 	        let engine = new BABYLON.Engine(canvas, true);
@@ -26354,7 +26235,7 @@
 	        let assetsLoaded = false;
 	        let hemisphericLight = Light_1.createHemisphericLight(scene);
 	        let light = Light_1.createLight(scene);
-	        let shadowGenerator = new BABYLON.ShadowGenerator(8192, light);
+	        let shadowGenerator = new BABYLON.ShadowGenerator(4096, light);
 	        let camera = Camera_1.default(scene, BABYLON.Vector3.Zero());
 	        let mouseControl = new MouseControl_1.default(canvas, camera, options.invertCameraOnTouch);
 	        mouseControl.leftMouseAction = (event) => alert('yay');
@@ -26385,7 +26266,7 @@
 	            if (pickResult.hit) {
 	                particleSystem.emitter.position = pickResult.pickedPoint;
 	            }
-	        }.bind(this)));
+	        }));
 	        /*
 	          BABYLON.SceneLoader.ImportMesh("penguin", "babylonjs/", "penguin.babylon", scene, function(newMeshes) {
 	            this.random = newMeshes[0];
@@ -26426,7 +26307,7 @@
 	            //addShadows(this.characterMesh);
 	            shadowGenerator.getShadowMap().renderList.push(characterMesh);
 	            //this.load();
-	        }.bind(this);
+	        };
 	        assetsManager.load();
 	    }
 	    return options;
@@ -26436,7 +26317,7 @@
 
 
 /***/ },
-/* 244 */
+/* 237 */
 /***/ function(module, exports) {
 
 	var __decorate=this&&this.__decorate||function(e,t,i,r){var n,o=arguments.length,s=o<3?t:null===r?r=Object.getOwnPropertyDescriptor(t,i):r;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)s=Reflect.decorate(e,t,i,r);else for(var a=e.length-1;a>=0;a--)(n=e[a])&&(s=(o<3?n(s):o>3?n(t,i,s):n(t,i))||s);return o>3&&s&&Object.defineProperty(t,i,s),s},__extends=this&&this.__extends||function(e,t){function i(){this.constructor=e}for(var r in t)t.hasOwnProperty(r)&&(e[r]=t[r]);i.prototype=t.prototype,e.prototype=new i},BABYLON;!(function(e){e.ToGammaSpace=1/2.2,e.ToLinearSpace=2.2,e.Epsilon=.001;var t=(function(){function e(){}return e.WithinEpsilon=function(e,t,i){void 0===i&&(i=1.401298e-45);var r=e-t;return-i<=r&&r<=i},e.ToHex=function(e){var t=e.toString(16);return e<=15?("0"+t).toUpperCase():t.toUpperCase()},e.Sign=function(e){return e=+e,0===e||isNaN(e)?e:e>0?1:-1},e.Clamp=function(e,t,i){return void 0===t&&(t=0),void 0===i&&(i=1),Math.min(i,Math.max(t,e))},e})();e.MathTools=t;var i=(function(){function i(e,t,i){void 0===e&&(e=0),void 0===t&&(t=0),void 0===i&&(i=0),this.r=e,this.g=t,this.b=i}return i.prototype.toString=function(){return"{R: "+this.r+" G:"+this.g+" B:"+this.b+"}"},i.prototype.getClassName=function(){return"Color3"},i.prototype.getHashCode=function(){var e=this.r||0;return e=397*e^(this.g||0),e=397*e^(this.b||0)},i.prototype.toArray=function(e,t){return void 0===t&&(t=0),e[t]=this.r,e[t+1]=this.g,e[t+2]=this.b,this},i.prototype.toColor4=function(e){return void 0===e&&(e=1),new r(this.r,this.g,this.b,e)},i.prototype.asArray=function(){var e=[];return this.toArray(e,0),e},i.prototype.toLuminance=function(){return.3*this.r+.59*this.g+.11*this.b},i.prototype.multiply=function(e){return new i(this.r*e.r,this.g*e.g,this.b*e.b)},i.prototype.multiplyToRef=function(e,t){return t.r=this.r*e.r,t.g=this.g*e.g,t.b=this.b*e.b,this},i.prototype.equals=function(e){return e&&this.r===e.r&&this.g===e.g&&this.b===e.b},i.prototype.equalsFloats=function(e,t,i){return this.r===e&&this.g===t&&this.b===i},i.prototype.scale=function(e){return new i(this.r*e,this.g*e,this.b*e)},i.prototype.scaleToRef=function(e,t){return t.r=this.r*e,t.g=this.g*e,t.b=this.b*e,this},i.prototype.add=function(e){return new i(this.r+e.r,this.g+e.g,this.b+e.b)},i.prototype.addToRef=function(e,t){return t.r=this.r+e.r,t.g=this.g+e.g,t.b=this.b+e.b,this},i.prototype.subtract=function(e){return new i(this.r-e.r,this.g-e.g,this.b-e.b)},i.prototype.subtractToRef=function(e,t){return t.r=this.r-e.r,t.g=this.g-e.g,t.b=this.b-e.b,this},i.prototype.clone=function(){return new i(this.r,this.g,this.b)},i.prototype.copyFrom=function(e){return this.r=e.r,this.g=e.g,this.b=e.b,this},i.prototype.copyFromFloats=function(e,t,i){return this.r=e,this.g=t,this.b=i,this},i.prototype.toHexString=function(){var e=255*this.r|0,i=255*this.g|0,r=255*this.b|0;return"#"+t.ToHex(e)+t.ToHex(i)+t.ToHex(r)},i.prototype.toLinearSpace=function(){var e=new i;return this.toLinearSpaceToRef(e),e},i.prototype.toLinearSpaceToRef=function(t){return t.r=Math.pow(this.r,e.ToLinearSpace),t.g=Math.pow(this.g,e.ToLinearSpace),t.b=Math.pow(this.b,e.ToLinearSpace),this},i.prototype.toGammaSpace=function(){var e=new i;return this.toGammaSpaceToRef(e),e},i.prototype.toGammaSpaceToRef=function(t){return t.r=Math.pow(this.r,e.ToGammaSpace),t.g=Math.pow(this.g,e.ToGammaSpace),t.b=Math.pow(this.b,e.ToGammaSpace),this},i.FromHexString=function(e){if("#"!==e.substring(0,1)||7!==e.length)return new i(0,0,0);var t=parseInt(e.substring(1,3),16),r=parseInt(e.substring(3,5),16),n=parseInt(e.substring(5,7),16);return i.FromInts(t,r,n)},i.FromArray=function(e,t){return void 0===t&&(t=0),new i(e[t],e[t+1],e[t+2])},i.FromInts=function(e,t,r){return new i(e/255,t/255,r/255)},i.Lerp=function(e,t,r){var n=e.r+(t.r-e.r)*r,o=e.g+(t.g-e.g)*r,s=e.b+(t.b-e.b)*r;return new i(n,o,s)},i.Red=function(){return new i(1,0,0)},i.Green=function(){return new i(0,1,0)},i.Blue=function(){return new i(0,0,1)},i.Black=function(){return new i(0,0,0)},i.White=function(){return new i(1,1,1)},i.Purple=function(){return new i(.5,0,.5)},i.Magenta=function(){return new i(1,0,1)},i.Yellow=function(){return new i(1,1,0)},i.Gray=function(){return new i(.5,.5,.5)},i})();e.Color3=i;var r=(function(){function e(e,t,i,r){this.r=e,this.g=t,this.b=i,this.a=r}return e.prototype.addInPlace=function(e){return this.r+=e.r,this.g+=e.g,this.b+=e.b,this.a+=e.a,this},e.prototype.asArray=function(){var e=[];return this.toArray(e,0),e},e.prototype.toArray=function(e,t){return void 0===t&&(t=0),e[t]=this.r,e[t+1]=this.g,e[t+2]=this.b,e[t+3]=this.a,this},e.prototype.add=function(t){return new e(this.r+t.r,this.g+t.g,this.b+t.b,this.a+t.a)},e.prototype.subtract=function(t){return new e(this.r-t.r,this.g-t.g,this.b-t.b,this.a-t.a)},e.prototype.subtractToRef=function(e,t){return t.r=this.r-e.r,t.g=this.g-e.g,t.b=this.b-e.b,t.a=this.a-e.a,this},e.prototype.scale=function(t){return new e(this.r*t,this.g*t,this.b*t,this.a*t)},e.prototype.scaleToRef=function(e,t){return t.r=this.r*e,t.g=this.g*e,t.b=this.b*e,t.a=this.a*e,this},e.prototype.multiply=function(t){return new e(this.r*t.r,this.g*t.g,this.b*t.b,this.a*t.a)},e.prototype.multiplyToRef=function(e,t){return t.r=this.r*e.r,t.g=this.g*e.g,t.b=this.b*e.b,t.a=this.a*e.a,t},e.prototype.toString=function(){return"{R: "+this.r+" G:"+this.g+" B:"+this.b+" A:"+this.a+"}"},e.prototype.getClassName=function(){return"Color4"},e.prototype.getHashCode=function(){var e=this.r||0;return e=397*e^(this.g||0),e=397*e^(this.b||0),e=397*e^(this.a||0)},e.prototype.clone=function(){return new e(this.r,this.g,this.b,this.a)},e.prototype.copyFrom=function(e){return this.r=e.r,this.g=e.g,this.b=e.b,this.a=e.a,this},e.prototype.toHexString=function(){var e=255*this.r|0,i=255*this.g|0,r=255*this.b|0,n=255*this.a|0;return"#"+t.ToHex(e)+t.ToHex(i)+t.ToHex(r)+t.ToHex(n)},e.FromHexString=function(t){if("#"!==t.substring(0,1)||9!==t.length)return new e(0,0,0,0);var i=parseInt(t.substring(1,3),16),r=parseInt(t.substring(3,5),16),n=parseInt(t.substring(5,7),16),o=parseInt(t.substring(7,9),16);return e.FromInts(i,r,n,o)},e.Lerp=function(t,i,r){var n=new e(0,0,0,0);return e.LerpToRef(t,i,r,n),n},e.LerpToRef=function(e,t,i,r){r.r=e.r+(t.r-e.r)*i,r.g=e.g+(t.g-e.g)*i,r.b=e.b+(t.b-e.b)*i,r.a=e.a+(t.a-e.a)*i},e.FromArray=function(t,i){return void 0===i&&(i=0),new e(t[i],t[i+1],t[i+2],t[i+3])},e.FromInts=function(t,i,r,n){return new e(t/255,i/255,r/255,n/255)},e.CheckColors4=function(e,t){if(e.length===3*t){for(var i=[],r=0;r<e.length;r+=3){var n=r/3*4;i[n]=e[r],i[n+1]=e[r+1],i[n+2]=e[r+2],i[n+3]=1}return i}return e},e})();e.Color4=r;var n=(function(){function i(e,t){this.x=e,this.y=t}return i.prototype.toString=function(){return"{X: "+this.x+" Y:"+this.y+"}"},i.prototype.getClassName=function(){return"Vector2"},i.prototype.getHashCode=function(){var e=this.x||0;return e=397*e^(this.y||0)},i.prototype.toArray=function(e,t){return void 0===t&&(t=0),e[t]=this.x,e[t+1]=this.y,this},i.prototype.asArray=function(){var e=[];return this.toArray(e,0),e},i.prototype.copyFrom=function(e){return this.x=e.x,this.y=e.y,this},i.prototype.copyFromFloats=function(e,t){return this.x=e,this.y=t,this},i.prototype.add=function(e){return new i(this.x+e.x,this.y+e.y)},i.prototype.addToRef=function(e,t){return t.x=this.x+e.x,t.y=this.y+e.y,this},i.prototype.addInPlace=function(e){return this.x+=e.x,this.y+=e.y,this},i.prototype.addVector3=function(e){return new i(this.x+e.x,this.y+e.y)},i.prototype.subtract=function(e){return new i(this.x-e.x,this.y-e.y)},i.prototype.subtractToRef=function(e,t){return t.x=this.x-e.x,t.y=this.y-e.y,this},i.prototype.subtractInPlace=function(e){return this.x-=e.x,this.y-=e.y,this},i.prototype.multiplyInPlace=function(e){return this.x*=e.x,this.y*=e.y,this},i.prototype.multiply=function(e){return new i(this.x*e.x,this.y*e.y)},i.prototype.multiplyToRef=function(e,t){return t.x=this.x*e.x,t.y=this.y*e.y,this},i.prototype.multiplyByFloats=function(e,t){return new i(this.x*e,this.y*t)},i.prototype.divide=function(e){return new i(this.x/e.x,this.y/e.y)},i.prototype.divideToRef=function(e,t){return t.x=this.x/e.x,t.y=this.y/e.y,this},i.prototype.negate=function(){return new i((-this.x),(-this.y))},i.prototype.scaleInPlace=function(e){return this.x*=e,this.y*=e,this},i.prototype.scale=function(e){return new i(this.x*e,this.y*e)},i.prototype.equals=function(e){return e&&this.x===e.x&&this.y===e.y},i.prototype.equalsWithEpsilon=function(i,r){return void 0===r&&(r=e.Epsilon),i&&t.WithinEpsilon(this.x,i.x,r)&&t.WithinEpsilon(this.y,i.y,r)},i.prototype.length=function(){return Math.sqrt(this.x*this.x+this.y*this.y)},i.prototype.lengthSquared=function(){return this.x*this.x+this.y*this.y},i.prototype.normalize=function(){var e=this.length();if(0===e)return this;var t=1/e;return this.x*=t,this.y*=t,this},i.prototype.clone=function(){return new i(this.x,this.y)},i.Zero=function(){return new i(0,0)},i.FromArray=function(e,t){return void 0===t&&(t=0),new i(e[t],e[t+1])},i.FromArrayToRef=function(e,t,i){i.x=e[t],i.y=e[t+1]},i.CatmullRom=function(e,t,r,n,o){var s=o*o,a=o*s,h=.5*(2*t.x+(-e.x+r.x)*o+(2*e.x-5*t.x+4*r.x-n.x)*s+(-e.x+3*t.x-3*r.x+n.x)*a),c=.5*(2*t.y+(-e.y+r.y)*o+(2*e.y-5*t.y+4*r.y-n.y)*s+(-e.y+3*t.y-3*r.y+n.y)*a);return new i(h,c)},i.Clamp=function(e,t,r){var n=e.x;n=n>r.x?r.x:n,n=n<t.x?t.x:n;var o=e.y;return o=o>r.y?r.y:o,o=o<t.y?t.y:o,new i(n,o)},i.Hermite=function(e,t,r,n,o){var s=o*o,a=o*s,h=2*a-3*s+1,c=-2*a+3*s,l=a-2*s+o,u=a-s,d=e.x*h+r.x*c+t.x*l+n.x*u,f=e.y*h+r.y*c+t.y*l+n.y*u;return new i(d,f)},i.Lerp=function(e,t,r){var n=e.x+(t.x-e.x)*r,o=e.y+(t.y-e.y)*r;return new i(n,o)},i.Dot=function(e,t){return e.x*t.x+e.y*t.y},i.Normalize=function(e){var t=e.clone();return t.normalize(),t},i.Minimize=function(e,t){var r=e.x<t.x?e.x:t.x,n=e.y<t.y?e.y:t.y;return new i(r,n)},i.Maximize=function(e,t){var r=e.x>t.x?e.x:t.x,n=e.y>t.y?e.y:t.y;return new i(r,n)},i.Transform=function(e,t){var r=i.Zero();return i.TransformToRef(e,t,r),r},i.TransformToRef=function(e,t,i){var r=e.x*t.m[0]+e.y*t.m[4]+t.m[12],n=e.x*t.m[1]+e.y*t.m[5]+t.m[13];i.x=r,i.y=n},i.PointInTriangle=function(e,t,i,r){var n=.5*(-i.y*r.x+t.y*(-i.x+r.x)+t.x*(i.y-r.y)+i.x*r.y),o=n<0?-1:1,s=(t.y*r.x-t.x*r.y+(r.y-t.y)*e.x+(t.x-r.x)*e.y)*o,a=(t.x*i.y-t.y*i.x+(t.y-i.y)*e.x+(i.x-t.x)*e.y)*o;return s>0&&a>0&&s+a<2*n*o},i.Distance=function(e,t){return Math.sqrt(i.DistanceSquared(e,t))},i.DistanceSquared=function(e,t){var i=e.x-t.x,r=e.y-t.y;return i*i+r*r},i.Center=function(e,t){var i=e.add(t);return i.scaleInPlace(.5),i},i.DistanceOfPointFromSegment=function(e,t,r){var n=i.DistanceSquared(t,r);if(0===n)return i.Distance(e,t);var o=r.subtract(t),s=Math.max(0,Math.min(1,i.Dot(e.subtract(t),o)/n)),a=t.add(o.multiplyByFloats(s,s));return i.Distance(e,a)},i})();e.Vector2=n;var o=(function(){function i(e,t,i){this.x=e,this.y=t,this.z=i}return i.prototype.toString=function(){return"{X: "+this.x+" Y:"+this.y+" Z:"+this.z+"}"},i.prototype.getClassName=function(){return"Vector3"},i.prototype.getHashCode=function(){var e=this.x||0;return e=397*e^(this.y||0),e=397*e^(this.z||0)},i.prototype.asArray=function(){var e=[];return this.toArray(e,0),e},i.prototype.toArray=function(e,t){return void 0===t&&(t=0),e[t]=this.x,e[t+1]=this.y,e[t+2]=this.z,this},i.prototype.toQuaternion=function(){var e=new h(0,0,0,1),t=Math.cos(.5*(this.x+this.z)),i=Math.sin(.5*(this.x+this.z)),r=Math.cos(.5*(this.z-this.x)),n=Math.sin(.5*(this.z-this.x)),o=Math.cos(.5*this.y),s=Math.sin(.5*this.y);return e.x=r*s,e.y=-n*s,e.z=i*o,e.w=t*o,e},i.prototype.addInPlace=function(e){return this.x+=e.x,this.y+=e.y,this.z+=e.z,this},i.prototype.add=function(e){return new i(this.x+e.x,this.y+e.y,this.z+e.z)},i.prototype.addToRef=function(e,t){return t.x=this.x+e.x,t.y=this.y+e.y,t.z=this.z+e.z,this},i.prototype.subtractInPlace=function(e){return this.x-=e.x,this.y-=e.y,this.z-=e.z,this},i.prototype.subtract=function(e){return new i(this.x-e.x,this.y-e.y,this.z-e.z)},i.prototype.subtractToRef=function(e,t){return t.x=this.x-e.x,t.y=this.y-e.y,t.z=this.z-e.z,this},i.prototype.subtractFromFloats=function(e,t,r){return new i(this.x-e,this.y-t,this.z-r)},i.prototype.subtractFromFloatsToRef=function(e,t,i,r){return r.x=this.x-e,r.y=this.y-t,r.z=this.z-i,this},i.prototype.negate=function(){return new i((-this.x),(-this.y),(-this.z))},i.prototype.scaleInPlace=function(e){return this.x*=e,this.y*=e,this.z*=e,this},i.prototype.scale=function(e){return new i(this.x*e,this.y*e,this.z*e)},i.prototype.scaleToRef=function(e,t){t.x=this.x*e,t.y=this.y*e,t.z=this.z*e},i.prototype.equals=function(e){return e&&this.x===e.x&&this.y===e.y&&this.z===e.z},i.prototype.equalsWithEpsilon=function(i,r){return void 0===r&&(r=e.Epsilon),i&&t.WithinEpsilon(this.x,i.x,r)&&t.WithinEpsilon(this.y,i.y,r)&&t.WithinEpsilon(this.z,i.z,r)},i.prototype.equalsToFloats=function(e,t,i){return this.x===e&&this.y===t&&this.z===i},i.prototype.multiplyInPlace=function(e){return this.x*=e.x,this.y*=e.y,this.z*=e.z,this},i.prototype.multiply=function(e){return new i(this.x*e.x,this.y*e.y,this.z*e.z)},i.prototype.multiplyToRef=function(e,t){return t.x=this.x*e.x,t.y=this.y*e.y,t.z=this.z*e.z,this},i.prototype.multiplyByFloats=function(e,t,r){return new i(this.x*e,this.y*t,this.z*r)},i.prototype.divide=function(e){return new i(this.x/e.x,this.y/e.y,this.z/e.z)},i.prototype.divideToRef=function(e,t){return t.x=this.x/e.x,t.y=this.y/e.y,t.z=this.z/e.z,this},i.prototype.MinimizeInPlace=function(e){return e.x<this.x&&(this.x=e.x),e.y<this.y&&(this.y=e.y),e.z<this.z&&(this.z=e.z),this},i.prototype.MaximizeInPlace=function(e){return e.x>this.x&&(this.x=e.x),e.y>this.y&&(this.y=e.y),e.z>this.z&&(this.z=e.z),this},i.prototype.length=function(){return Math.sqrt(this.x*this.x+this.y*this.y+this.z*this.z)},i.prototype.lengthSquared=function(){return this.x*this.x+this.y*this.y+this.z*this.z},i.prototype.normalize=function(){var e=this.length();if(0===e||1===e)return this;var t=1/e;return this.x*=t,this.y*=t,this.z*=t,this},i.prototype.clone=function(){return new i(this.x,this.y,this.z)},i.prototype.copyFrom=function(e){return this.x=e.x,this.y=e.y,this.z=e.z,this},i.prototype.copyFromFloats=function(e,t,i){return this.x=e,this.y=t,this.z=i,this},i.GetClipFactor=function(e,t,r,n){var o=i.Dot(e,r)-n,s=i.Dot(t,r)-n,a=o/(o-s);return a},i.FromArray=function(e,t){return t||(t=0),new i(e[t],e[t+1],e[t+2])},i.FromFloatArray=function(e,t){return t||(t=0),new i(e[t],e[t+1],e[t+2])},i.FromArrayToRef=function(e,t,i){i.x=e[t],i.y=e[t+1],i.z=e[t+2]},i.FromFloatArrayToRef=function(e,t,i){i.x=e[t],i.y=e[t+1],i.z=e[t+2]},i.FromFloatsToRef=function(e,t,i,r){r.x=e,r.y=t,r.z=i},i.Zero=function(){return new i(0,0,0)},i.Up=function(){return new i(0,1,0)},i.Forward=function(){return new i(0,0,1)},i.Right=function(){return new i(1,0,0)},i.Left=function(){return new i((-1),0,0)},i.TransformCoordinates=function(e,t){var r=i.Zero();return i.TransformCoordinatesToRef(e,t,r),r},i.TransformCoordinatesToRef=function(e,t,i){var r=e.x*t.m[0]+e.y*t.m[4]+e.z*t.m[8]+t.m[12],n=e.x*t.m[1]+e.y*t.m[5]+e.z*t.m[9]+t.m[13],o=e.x*t.m[2]+e.y*t.m[6]+e.z*t.m[10]+t.m[14],s=e.x*t.m[3]+e.y*t.m[7]+e.z*t.m[11]+t.m[15];i.x=r/s,i.y=n/s,i.z=o/s},i.TransformCoordinatesFromFloatsToRef=function(e,t,i,r,n){var o=e*r.m[0]+t*r.m[4]+i*r.m[8]+r.m[12],s=e*r.m[1]+t*r.m[5]+i*r.m[9]+r.m[13],a=e*r.m[2]+t*r.m[6]+i*r.m[10]+r.m[14],h=e*r.m[3]+t*r.m[7]+i*r.m[11]+r.m[15];n.x=o/h,n.y=s/h,n.z=a/h},i.TransformNormal=function(e,t){var r=i.Zero();return i.TransformNormalToRef(e,t,r),r},i.TransformNormalToRef=function(e,t,i){var r=e.x*t.m[0]+e.y*t.m[4]+e.z*t.m[8],n=e.x*t.m[1]+e.y*t.m[5]+e.z*t.m[9],o=e.x*t.m[2]+e.y*t.m[6]+e.z*t.m[10];i.x=r,i.y=n,i.z=o},i.TransformNormalFromFloatsToRef=function(e,t,i,r,n){n.x=e*r.m[0]+t*r.m[4]+i*r.m[8],n.y=e*r.m[1]+t*r.m[5]+i*r.m[9],n.z=e*r.m[2]+t*r.m[6]+i*r.m[10]},i.CatmullRom=function(e,t,r,n,o){var s=o*o,a=o*s,h=.5*(2*t.x+(-e.x+r.x)*o+(2*e.x-5*t.x+4*r.x-n.x)*s+(-e.x+3*t.x-3*r.x+n.x)*a),c=.5*(2*t.y+(-e.y+r.y)*o+(2*e.y-5*t.y+4*r.y-n.y)*s+(-e.y+3*t.y-3*r.y+n.y)*a),l=.5*(2*t.z+(-e.z+r.z)*o+(2*e.z-5*t.z+4*r.z-n.z)*s+(-e.z+3*t.z-3*r.z+n.z)*a);return new i(h,c,l)},i.Clamp=function(e,t,r){var n=e.x;n=n>r.x?r.x:n,n=n<t.x?t.x:n;var o=e.y;o=o>r.y?r.y:o,o=o<t.y?t.y:o;var s=e.z;return s=s>r.z?r.z:s,s=s<t.z?t.z:s,new i(n,o,s)},i.Hermite=function(e,t,r,n,o){var s=o*o,a=o*s,h=2*a-3*s+1,c=-2*a+3*s,l=a-2*s+o,u=a-s,d=e.x*h+r.x*c+t.x*l+n.x*u,f=e.y*h+r.y*c+t.y*l+n.y*u,p=e.z*h+r.z*c+t.z*l+n.z*u;return new i(d,f,p)},i.Lerp=function(e,t,r){var n=e.x+(t.x-e.x)*r,o=e.y+(t.y-e.y)*r,s=e.z+(t.z-e.z)*r;return new i(n,o,s)},i.Dot=function(e,t){return e.x*t.x+e.y*t.y+e.z*t.z},i.Cross=function(e,t){var r=i.Zero();return i.CrossToRef(e,t,r),r},i.CrossToRef=function(e,t,i){P.Vector3[0].x=e.y*t.z-e.z*t.y,P.Vector3[0].y=e.z*t.x-e.x*t.z,P.Vector3[0].z=e.x*t.y-e.y*t.x,i.copyFrom(P.Vector3[0])},i.Normalize=function(e){var t=i.Zero();return i.NormalizeToRef(e,t),t},i.NormalizeToRef=function(e,t){t.copyFrom(e),t.normalize()},i.Project=function(e,t,r,n){var o=n.width,s=n.height,a=n.x,h=n.y,l=i._viewportMatrixCache?i._viewportMatrixCache:i._viewportMatrixCache=new c;c.FromValuesToRef(o/2,0,0,0,0,-s/2,0,0,0,0,1,0,a+o/2,s/2+h,0,1,l);var u=i._matrixCache?i._matrixCache:i._matrixCache=new c;return t.multiplyToRef(r,u),u.multiplyToRef(l,u),i.TransformCoordinates(e,u)},i.UnprojectFromTransform=function(e,r,n,o,s){var a=i._matrixCache?i._matrixCache:i._matrixCache=new c;o.multiplyToRef(s,a),a.invert(),e.x=e.x/r*2-1,e.y=-(e.y/n*2-1);var h=i.TransformCoordinates(e,a),l=e.x*a.m[3]+e.y*a.m[7]+e.z*a.m[11]+a.m[15];return t.WithinEpsilon(l,1)&&(h=h.scale(1/l)),h},i.Unproject=function(e,r,n,o,s,a){var h=i._matrixCache?i._matrixCache:i._matrixCache=new c;o.multiplyToRef(s,h),h.multiplyToRef(a,h),h.invert();var l=new i(e.x/r*2-1,(-(e.y/n*2-1)),e.z),u=i.TransformCoordinates(l,h),d=l.x*h.m[3]+l.y*h.m[7]+l.z*h.m[11]+h.m[15];return t.WithinEpsilon(d,1)&&(u=u.scale(1/d)),u},i.Minimize=function(e,t){var i=e.clone();return i.MinimizeInPlace(t),i},i.Maximize=function(e,t){var i=e.clone();return i.MaximizeInPlace(t),i},i.Distance=function(e,t){return Math.sqrt(i.DistanceSquared(e,t))},i.DistanceSquared=function(e,t){var i=e.x-t.x,r=e.y-t.y,n=e.z-t.z;return i*i+r*r+n*n},i.Center=function(e,t){var i=e.add(t);return i.scaleInPlace(.5),i},i.RotationFromAxis=function(e,t,r){var n=i.Zero();return i.RotationFromAxisToRef(e,t,r,n),n},i.RotationFromAxisToRef=function(r,n,o,s){var a=r.normalize(),h=o.normalize(),c=f.X,l=f.Y,u=0,d=0,p=0,m=0,_=0,g=0,v=0,y=-1,x=0,b=P.Vector3[0],T=0,A=P.Vector3[1];t.WithinEpsilon(h.z,0,e.Epsilon)?g=1:t.WithinEpsilon(h.x,0,e.Epsilon)?m=1:(v=h.z/h.x,m=-v*Math.sqrt(1/(1+v*v)),g=Math.sqrt(1/(1+v*v))),A.x=m,A.y=_,A.z=g,A.normalize(),i.CrossToRef(a,A,b),b.normalize(),i.Dot(h,b)<0&&(y=1),T=i.Dot(a,A),T=Math.min(1,Math.max(-1,T)),p=Math.acos(T)*y,i.Dot(A,c)<0&&(p=Math.PI+p,A=A.scaleInPlace(-1),x++);var E=P.Vector3[2],M=P.Vector3[3];m=0,_=0,g=0,y=-1,t.WithinEpsilon(h.z,0,e.Epsilon)?m=1:(v=A.z/A.x,m=-v*Math.sqrt(1/(1+v*v)),g=Math.sqrt(1/(1+v*v))),E.x=m,E.y=_,E.z=g,E.normalize(),i.CrossToRef(E,A,M),M.normalize(),i.CrossToRef(h,E,b),b.normalize(),i.Dot(A,b)<0&&(y=1),T=i.Dot(h,E),T=Math.min(1,Math.max(-1,T)),d=Math.acos(T)*y,i.Dot(M,l)<0&&(d=Math.PI+d,x++),y=-1,i.CrossToRef(c,A,b),b.normalize(),i.Dot(b,l)<0&&(y=1),T=i.Dot(A,c),T=Math.min(1,Math.max(-1,T)),u=-Math.acos(T)*y,T<0&&x<2&&(u=Math.PI+u),s.x=d,s.y=u,s.z=p},i})();e.Vector3=o;var s=(function(){function i(e,t,i,r){this.x=e,this.y=t,this.z=i,this.w=r}return i.prototype.toString=function(){return"{X: "+this.x+" Y:"+this.y+" Z:"+this.z+" W:"+this.w+"}"},i.prototype.getClassName=function(){return"Vector4"},i.prototype.getHashCode=function(){var e=this.x||0;return e=397*e^(this.y||0),e=397*e^(this.z||0),e=397*e^(this.w||0)},i.prototype.asArray=function(){var e=[];return this.toArray(e,0),e},i.prototype.toArray=function(e,t){return void 0===t&&(t=0),e[t]=this.x,e[t+1]=this.y,e[t+2]=this.z,e[t+3]=this.w,this},i.prototype.addInPlace=function(e){return this.x+=e.x,this.y+=e.y,this.z+=e.z,this.w+=e.w,this},i.prototype.add=function(e){return new i(this.x+e.x,this.y+e.y,this.z+e.z,this.w+e.w)},i.prototype.addToRef=function(e,t){return t.x=this.x+e.x,t.y=this.y+e.y,t.z=this.z+e.z,t.w=this.w+e.w,this},i.prototype.subtractInPlace=function(e){return this.x-=e.x,this.y-=e.y,this.z-=e.z,this.w-=e.w,this},i.prototype.subtract=function(e){return new i(this.x-e.x,this.y-e.y,this.z-e.z,this.w-e.w)},i.prototype.subtractToRef=function(e,t){return t.x=this.x-e.x,t.y=this.y-e.y,t.z=this.z-e.z,t.w=this.w-e.w,this},i.prototype.subtractFromFloats=function(e,t,r,n){return new i(this.x-e,this.y-t,this.z-r,this.w-n)},i.prototype.subtractFromFloatsToRef=function(e,t,i,r,n){return n.x=this.x-e,n.y=this.y-t,n.z=this.z-i,n.w=this.w-r,this},i.prototype.negate=function(){return new i((-this.x),(-this.y),(-this.z),(-this.w))},i.prototype.scaleInPlace=function(e){return this.x*=e,this.y*=e,this.z*=e,this.w*=e,this},i.prototype.scale=function(e){return new i(this.x*e,this.y*e,this.z*e,this.w*e)},i.prototype.scaleToRef=function(e,t){t.x=this.x*e,t.y=this.y*e,t.z=this.z*e,t.w=this.w*e},i.prototype.equals=function(e){return e&&this.x===e.x&&this.y===e.y&&this.z===e.z&&this.w===e.w},i.prototype.equalsWithEpsilon=function(i,r){return void 0===r&&(r=e.Epsilon),i&&t.WithinEpsilon(this.x,i.x,r)&&t.WithinEpsilon(this.y,i.y,r)&&t.WithinEpsilon(this.z,i.z,r)&&t.WithinEpsilon(this.w,i.w,r)},i.prototype.equalsToFloats=function(e,t,i,r){return this.x===e&&this.y===t&&this.z===i&&this.w===r},i.prototype.multiplyInPlace=function(e){return this.x*=e.x,this.y*=e.y,this.z*=e.z,this.w*=e.w,this},i.prototype.multiply=function(e){return new i(this.x*e.x,this.y*e.y,this.z*e.z,this.w*e.w)},i.prototype.multiplyToRef=function(e,t){return t.x=this.x*e.x,t.y=this.y*e.y,t.z=this.z*e.z,t.w=this.w*e.w,this},i.prototype.multiplyByFloats=function(e,t,r,n){return new i(this.x*e,this.y*t,this.z*r,this.w*n)},i.prototype.divide=function(e){return new i(this.x/e.x,this.y/e.y,this.z/e.z,this.w/e.w)},i.prototype.divideToRef=function(e,t){return t.x=this.x/e.x,t.y=this.y/e.y,t.z=this.z/e.z,t.w=this.w/e.w,this},i.prototype.MinimizeInPlace=function(e){return e.x<this.x&&(this.x=e.x),e.y<this.y&&(this.y=e.y),e.z<this.z&&(this.z=e.z),e.w<this.w&&(this.w=e.w),this},i.prototype.MaximizeInPlace=function(e){return e.x>this.x&&(this.x=e.x),e.y>this.y&&(this.y=e.y),e.z>this.z&&(this.z=e.z),e.w>this.w&&(this.w=e.w),this},i.prototype.length=function(){return Math.sqrt(this.x*this.x+this.y*this.y+this.z*this.z+this.w*this.w)},i.prototype.lengthSquared=function(){return this.x*this.x+this.y*this.y+this.z*this.z+this.w*this.w},i.prototype.normalize=function(){var e=this.length();if(0===e)return this;var t=1/e;return this.x*=t,this.y*=t,this.z*=t,this.w*=t,this},i.prototype.toVector3=function(){return new o(this.x,this.y,this.z)},i.prototype.clone=function(){return new i(this.x,this.y,this.z,this.w)},i.prototype.copyFrom=function(e){return this.x=e.x,this.y=e.y,this.z=e.z,this.w=e.w,this},i.prototype.copyFromFloats=function(e,t,i,r){return this.x=e,this.y=t,this.z=i,this.w=r,this},i.FromArray=function(e,t){return t||(t=0),new i(e[t],e[t+1],e[t+2],e[t+3])},i.FromArrayToRef=function(e,t,i){i.x=e[t],i.y=e[t+1],i.z=e[t+2],i.w=e[t+3]},i.FromFloatArrayToRef=function(e,t,i){i.x=e[t],i.y=e[t+1],i.z=e[t+2],i.w=e[t+3]},i.FromFloatsToRef=function(e,t,i,r,n){n.x=e,n.y=t,n.z=i,n.w=r},i.Zero=function(){return new i(0,0,0,0)},i.Normalize=function(e){var t=i.Zero();return i.NormalizeToRef(e,t),t},i.NormalizeToRef=function(e,t){t.copyFrom(e),t.normalize()},i.Minimize=function(e,t){var i=e.clone();return i.MinimizeInPlace(t),i},i.Maximize=function(e,t){var i=e.clone();return i.MaximizeInPlace(t),i},i.Distance=function(e,t){return Math.sqrt(i.DistanceSquared(e,t))},i.DistanceSquared=function(e,t){var i=e.x-t.x,r=e.y-t.y,n=e.z-t.z,o=e.w-t.w;return i*i+r*r+n*n+o*o},i.Center=function(e,t){var i=e.add(t);return i.scaleInPlace(.5),i},i})();e.Vector4=s;var a=(function(){function e(e,t){this.width=e,this.height=t}return e.prototype.toString=function(){return"{W: "+this.width+", H: "+this.height+"}"},e.prototype.getClassName=function(){return"Size"},e.prototype.getHashCode=function(){var e=this.width||0;return e=397*e^(this.height||0)},e.prototype.copyFrom=function(e){this.width=e.width,this.height=e.height},e.prototype.copyFromFloats=function(e,t){this.width=e,this.height=t},e.prototype.multiplyByFloats=function(t,i){return new e(this.width*t,this.height*i)},e.prototype.clone=function(){return new e(this.width,this.height)},e.prototype.equals=function(e){return!!e&&(this.width===e.width&&this.height===e.height)},Object.defineProperty(e.prototype,"surface",{get:function(){return this.width*this.height},enumerable:!0,configurable:!0}),e.Zero=function(){return new e(0,0)},e.prototype.add=function(t){var i=new e(this.width+t.width,this.height+t.height);return i},e.prototype.substract=function(t){var i=new e(this.width-t.width,this.height-t.height);return i},e.Lerp=function(t,i,r){var n=t.width+(i.width-t.width)*r,o=t.height+(i.height-t.height)*r;return new e(n,o)},e})();e.Size=a;var h=(function(){function e(e,t,i,r){void 0===e&&(e=0),void 0===t&&(t=0),void 0===i&&(i=0),void 0===r&&(r=1),this.x=e,this.y=t,this.z=i,this.w=r}return e.prototype.toString=function(){return"{X: "+this.x+" Y:"+this.y+" Z:"+this.z+" W:"+this.w+"}"},e.prototype.getClassName=function(){return"Quaternion"},e.prototype.getHashCode=function(){var e=this.x||0;return e=397*e^(this.y||0),e=397*e^(this.z||0),e=397*e^(this.w||0)},e.prototype.asArray=function(){return[this.x,this.y,this.z,this.w]},e.prototype.equals=function(e){return e&&this.x===e.x&&this.y===e.y&&this.z===e.z&&this.w===e.w},e.prototype.clone=function(){return new e(this.x,this.y,this.z,this.w)},e.prototype.copyFrom=function(e){return this.x=e.x,this.y=e.y,this.z=e.z,this.w=e.w,this},e.prototype.copyFromFloats=function(e,t,i,r){return this.x=e,this.y=t,this.z=i,this.w=r,this},e.prototype.add=function(t){return new e(this.x+t.x,this.y+t.y,this.z+t.z,this.w+t.w)},e.prototype.subtract=function(t){return new e(this.x-t.x,this.y-t.y,this.z-t.z,this.w-t.w)},e.prototype.scale=function(t){return new e(this.x*t,this.y*t,this.z*t,this.w*t)},e.prototype.multiply=function(t){var i=new e(0,0,0,1);return this.multiplyToRef(t,i),i},e.prototype.multiplyToRef=function(e,t){var i=this.x*e.w+this.y*e.z-this.z*e.y+this.w*e.x,r=-this.x*e.z+this.y*e.w+this.z*e.x+this.w*e.y,n=this.x*e.y-this.y*e.x+this.z*e.w+this.w*e.z,o=-this.x*e.x-this.y*e.y-this.z*e.z+this.w*e.w;return t.copyFromFloats(i,r,n,o),this},e.prototype.multiplyInPlace=function(e){return this.multiplyToRef(e,this),this},e.prototype.conjugateToRef=function(e){return e.copyFromFloats(-this.x,-this.y,-this.z,this.w),this},e.prototype.conjugateInPlace=function(){return this.x*=-1,this.y*=-1,this.z*=-1,this},e.prototype.conjugate=function(){var t=new e((-this.x),(-this.y),(-this.z),this.w);return t},e.prototype.length=function(){return Math.sqrt(this.x*this.x+this.y*this.y+this.z*this.z+this.w*this.w)},e.prototype.normalize=function(){var e=1/this.length();return this.x*=e,this.y*=e,this.z*=e,this.w*=e,this},e.prototype.toEulerAngles=function(e){void 0===e&&(e="YZX");var t=o.Zero();return this.toEulerAnglesToRef(t,e),t},e.prototype.toEulerAnglesToRef=function(e,t){void 0===t&&(t="YZX");var i=this.z,r=this.x,n=this.y,o=this.w,s=o*o,a=i*i,h=r*r,c=n*n,l=n*i-r*o,u=.4999999;return l<-u?(e.y=2*Math.atan2(n,o),e.x=Math.PI/2,e.z=0):l>u?(e.y=2*Math.atan2(n,o),e.x=-Math.PI/2,e.z=0):(e.z=Math.atan2(2*(r*n+i*o),-a-h+c+s),e.x=Math.asin(-2*(i*n-r*o)),e.y=Math.atan2(2*(i*r+n*o),a-h-c+s)),this},e.prototype.toRotationMatrix=function(e){var t=this.x*this.x,i=this.y*this.y,r=this.z*this.z,n=this.x*this.y,o=this.z*this.w,s=this.z*this.x,a=this.y*this.w,h=this.y*this.z,c=this.x*this.w;return e.m[0]=1-2*(i+r),e.m[1]=2*(n+o),e.m[2]=2*(s-a),e.m[3]=0,e.m[4]=2*(n-o),e.m[5]=1-2*(r+t),e.m[6]=2*(h+c),e.m[7]=0,e.m[8]=2*(s+a),e.m[9]=2*(h-c),e.m[10]=1-2*(i+t),e.m[11]=0,e.m[12]=0,e.m[13]=0,e.m[14]=0,e.m[15]=1,this},e.prototype.fromRotationMatrix=function(t){return e.FromRotationMatrixToRef(t,this),this},e.FromRotationMatrix=function(t){var i=new e;return e.FromRotationMatrixToRef(t,i),i},e.FromRotationMatrixToRef=function(e,t){var i,r=e.m,n=r[0],o=r[4],s=r[8],a=r[1],h=r[5],c=r[9],l=r[2],u=r[6],d=r[10],f=n+h+d;f>0?(i=.5/Math.sqrt(f+1),t.w=.25/i,t.x=(u-c)*i,t.y=(s-l)*i,t.z=(a-o)*i):n>h&&n>d?(i=2*Math.sqrt(1+n-h-d),t.w=(u-c)/i,t.x=.25*i,t.y=(o+a)/i,t.z=(s+l)/i):h>d?(i=2*Math.sqrt(1+h-n-d),t.w=(s-l)/i,t.x=(o+a)/i,t.y=.25*i,t.z=(c+u)/i):(i=2*Math.sqrt(1+d-n-h),t.w=(a-o)/i,t.x=(s+l)/i,t.y=(c+u)/i,t.z=.25*i)},e.Inverse=function(t){return new e((-t.x),(-t.y),(-t.z),t.w)},e.Identity=function(){return new e(0,0,0,1)},e.RotationAxis=function(t,i){return e.RotationAxisToRef(t,i,new e)},e.RotationAxisToRef=function(e,t,i){var r=Math.sin(t/2);return e.normalize(),i.w=Math.cos(t/2),i.x=e.x*r,i.y=e.y*r,i.z=e.z*r,i},e.FromArray=function(t,i){return i||(i=0),new e(t[i],t[i+1],t[i+2],t[i+3])},e.RotationYawPitchRoll=function(t,i,r){var n=new e;return e.RotationYawPitchRollToRef(t,i,r,n),n},e.RotationYawPitchRollToRef=function(e,t,i,r){var n=.5*i,o=.5*t,s=.5*e,a=Math.sin(n),h=Math.cos(n),c=Math.sin(o),l=Math.cos(o),u=Math.sin(s),d=Math.cos(s);r.x=d*c*h+u*l*a,r.y=u*l*h-d*c*a,r.z=d*l*a-u*c*h,r.w=d*l*h+u*c*a},e.RotationAlphaBetaGamma=function(t,i,r){var n=new e;return e.RotationAlphaBetaGammaToRef(t,i,r,n),n},e.RotationAlphaBetaGammaToRef=function(e,t,i,r){var n=.5*(i+e),o=.5*(i-e),s=.5*t;r.x=Math.cos(o)*Math.sin(s),r.y=Math.sin(o)*Math.sin(s),r.z=Math.sin(n)*Math.cos(s),r.w=Math.cos(n)*Math.cos(s)},e.Slerp=function(t,i,r){var n=e.Identity();return e.SlerpToRef(t,i,r,n),n},e.SlerpToRef=function(e,t,i,r){var n,o,s=i,a=e.x*t.x+e.y*t.y+e.z*t.z+e.w*t.w,h=!1;if(a<0&&(h=!0,a=-a),a>.999999)o=1-s,n=h?-s:s;else{var c=Math.acos(a),l=1/Math.sin(c);o=Math.sin((1-s)*c)*l,n=h?-Math.sin(s*c)*l:Math.sin(s*c)*l}r.x=o*e.x+n*t.x,r.y=o*e.y+n*t.y,r.z=o*e.z+n*t.z,r.w=o*e.w+n*t.w},e})();e.Quaternion=h;var c=(function(){function e(){this.m=new Float32Array(16)}return e.prototype.isIdentity=function(){return 1===this.m[0]&&1===this.m[5]&&1===this.m[10]&&1===this.m[15]&&(0===this.m[1]&&0===this.m[2]&&0===this.m[3]&&0===this.m[4]&&0===this.m[6]&&0===this.m[7]&&0===this.m[8]&&0===this.m[9]&&0===this.m[11]&&0===this.m[12]&&0===this.m[13]&&0===this.m[14])},e.prototype.determinant=function(){var e=this.m[10]*this.m[15]-this.m[11]*this.m[14],t=this.m[9]*this.m[15]-this.m[11]*this.m[13],i=this.m[9]*this.m[14]-this.m[10]*this.m[13],r=this.m[8]*this.m[15]-this.m[11]*this.m[12],n=this.m[8]*this.m[14]-this.m[10]*this.m[12],o=this.m[8]*this.m[13]-this.m[9]*this.m[12];return this.m[0]*(this.m[5]*e-this.m[6]*t+this.m[7]*i)-this.m[1]*(this.m[4]*e-this.m[6]*r+this.m[7]*n)+this.m[2]*(this.m[4]*t-this.m[5]*r+this.m[7]*o)-this.m[3]*(this.m[4]*i-this.m[5]*n+this.m[6]*o)},e.prototype.toArray=function(){return this.m},e.prototype.asArray=function(){return this.toArray()},e.prototype.invert=function(){return this.invertToRef(this),this},e.prototype.reset=function(){for(var e=0;e<16;e++)this.m[e]=0;return this},e.prototype.add=function(t){var i=new e;return this.addToRef(t,i),i},e.prototype.addToRef=function(e,t){for(var i=0;i<16;i++)t.m[i]=this.m[i]+e.m[i];return this},e.prototype.addToSelf=function(e){for(var t=0;t<16;t++)this.m[t]+=e.m[t];return this},e.prototype.invertToRef=function(e){var t=this.m[0],i=this.m[1],r=this.m[2],n=this.m[3],o=this.m[4],s=this.m[5],a=this.m[6],h=this.m[7],c=this.m[8],l=this.m[9],u=this.m[10],d=this.m[11],f=this.m[12],p=this.m[13],m=this.m[14],_=this.m[15],g=u*_-d*m,v=l*_-d*p,y=l*m-u*p,x=c*_-d*f,b=c*m-u*f,T=c*p-l*f,A=s*g-a*v+h*y,E=-(o*g-a*x+h*b),P=o*v-s*x+h*T,M=-(o*y-s*b+a*T),S=1/(t*A+i*E+r*P+n*M),C=a*_-h*m,R=s*_-h*p,O=s*m-a*p,D=o*_-h*f,I=o*m-a*f,w=o*p-s*f,L=a*d-h*u,B=s*d-h*l,F=s*u-a*l,V=o*d-h*c,N=o*u-a*c,z=o*l-s*c;return e.m[0]=A*S,e.m[4]=E*S,e.m[8]=P*S,e.m[12]=M*S,e.m[1]=-(i*g-r*v+n*y)*S,e.m[5]=(t*g-r*x+n*b)*S,e.m[9]=-(t*v-i*x+n*T)*S,e.m[13]=(t*y-i*b+r*T)*S,e.m[2]=(i*C-r*R+n*O)*S,
@@ -26479,11 +26360,11 @@
 	("undefined"!=typeof window&&window.module||"undefined"!=typeof module)&&"undefined"!=typeof module.exports&&(module.exports=BABYLON);
 
 /***/ },
-/* 245 */
+/* 238 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const BABYLON = __webpack_require__(244);
+	const BABYLON = __webpack_require__(237);
 	function createScene(engine) {
 	    let scene = new BABYLON.Scene(engine);
 	    scene.actionManager = new BABYLON.ActionManager(scene);
@@ -26498,11 +26379,11 @@
 
 
 /***/ },
-/* 246 */
+/* 239 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const BABYLON = __webpack_require__(244);
+	const BABYLON = __webpack_require__(237);
 	function createArcRotateCamera(scene, target) {
 	    let camera = new BABYLON.ArcRotateCamera("Camera", 1, 1, 90, target, scene);
 	    camera.checkCollisions = true;
@@ -26519,11 +26400,11 @@
 
 
 /***/ },
-/* 247 */
+/* 240 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const BABYLON = __webpack_require__(244);
+	const BABYLON = __webpack_require__(237);
 	function createParticleSystem(scene, options) {
 	    let emitter = BABYLON.Mesh.CreateBox("emitter", .1, scene);
 	    emitter.position = new BABYLON.Vector3(0, -1000, 0);
@@ -26563,12 +26444,12 @@
 
 
 /***/ },
-/* 248 */
+/* 241 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const BABYLON = __webpack_require__(244);
-	const Plane_1 = __webpack_require__(249);
+	const BABYLON = __webpack_require__(237);
+	const Plane_1 = __webpack_require__(242);
 	function createWalls(scene) {
 	    let red = (function () {
 	        let material = new BABYLON.StandardMaterial("texture1", scene);
@@ -26722,11 +26603,11 @@
 
 
 /***/ },
-/* 249 */
+/* 242 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const BABYLON = __webpack_require__(244);
+	const BABYLON = __webpack_require__(237);
 	function createPlane(scene, options) {
 	    let plane = BABYLON.Mesh.CreatePlane("plane", options.size, scene);
 	    plane.position = options.position;
@@ -26740,11 +26621,11 @@
 
 
 /***/ },
-/* 250 */
+/* 243 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const BABYLON = __webpack_require__(244);
+	const BABYLON = __webpack_require__(237);
 	function createHemisphericLight(scene) {
 	    let hemisphericLight = new BABYLON.HemisphericLight("Hemi0", new BABYLON.Vector3(0, 1, 0), scene);
 	    hemisphericLight.diffuse = new BABYLON.Color3(.5, .5, .5);
@@ -26761,7 +26642,7 @@
 
 
 /***/ },
-/* 251 */
+/* 244 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -26861,6 +26742,123 @@
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = default_1;
 
+
+/***/ },
+/* 245 */
+/***/ function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {/**
+	 * Copyright 2013-present, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 *
+	 * 
+	 */
+	
+	'use strict';
+	
+	var _prodInvariant = __webpack_require__(__webpack_module_template_argument_0__);
+	
+	var invariant = __webpack_require__(8);
+	
+	/**
+	 * Static poolers. Several custom versions for each potential number of
+	 * arguments. A completely generic pooler is easy to implement, but would
+	 * require accessing the `arguments` object. In each of these, `this` refers to
+	 * the Class itself, not an instance. If any others are needed, simply add them
+	 * here, or in their own files.
+	 */
+	var oneArgumentPooler = function (copyFieldsFrom) {
+	  var Klass = this;
+	  if (Klass.instancePool.length) {
+	    var instance = Klass.instancePool.pop();
+	    Klass.call(instance, copyFieldsFrom);
+	    return instance;
+	  } else {
+	    return new Klass(copyFieldsFrom);
+	  }
+	};
+	
+	var twoArgumentPooler = function (a1, a2) {
+	  var Klass = this;
+	  if (Klass.instancePool.length) {
+	    var instance = Klass.instancePool.pop();
+	    Klass.call(instance, a1, a2);
+	    return instance;
+	  } else {
+	    return new Klass(a1, a2);
+	  }
+	};
+	
+	var threeArgumentPooler = function (a1, a2, a3) {
+	  var Klass = this;
+	  if (Klass.instancePool.length) {
+	    var instance = Klass.instancePool.pop();
+	    Klass.call(instance, a1, a2, a3);
+	    return instance;
+	  } else {
+	    return new Klass(a1, a2, a3);
+	  }
+	};
+	
+	var fourArgumentPooler = function (a1, a2, a3, a4) {
+	  var Klass = this;
+	  if (Klass.instancePool.length) {
+	    var instance = Klass.instancePool.pop();
+	    Klass.call(instance, a1, a2, a3, a4);
+	    return instance;
+	  } else {
+	    return new Klass(a1, a2, a3, a4);
+	  }
+	};
+	
+	var standardReleaser = function (instance) {
+	  var Klass = this;
+	  !(instance instanceof Klass) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Trying to release an instance into a pool of a different type.') : _prodInvariant('25') : void 0;
+	  instance.destructor();
+	  if (Klass.instancePool.length < Klass.poolSize) {
+	    Klass.instancePool.push(instance);
+	  }
+	};
+	
+	var DEFAULT_POOL_SIZE = 10;
+	var DEFAULT_POOLER = oneArgumentPooler;
+	
+	/**
+	 * Augments `CopyConstructor` to be a poolable class, augmenting only the class
+	 * itself (statically) not adding any prototypical fields. Any CopyConstructor
+	 * you give this may have a `poolSize` property, and will look for a
+	 * prototypical `destructor` on instances.
+	 *
+	 * @param {Function} CopyConstructor Constructor that can be used to reset.
+	 * @param {Function} pooler Customizable pooler.
+	 */
+	var addPoolingTo = function (CopyConstructor, pooler) {
+	  // Casting as any so that flow ignores the actual implementation and trusts
+	  // it to match the type we declared
+	  var NewKlass = CopyConstructor;
+	  NewKlass.instancePool = [];
+	  NewKlass.getPooled = pooler || DEFAULT_POOLER;
+	  if (!NewKlass.poolSize) {
+	    NewKlass.poolSize = DEFAULT_POOL_SIZE;
+	  }
+	  NewKlass.release = standardReleaser;
+	  return NewKlass;
+	};
+	
+	var PooledClass = {
+	  addPoolingTo: addPoolingTo,
+	  oneArgumentPooler: oneArgumentPooler,
+	  twoArgumentPooler: twoArgumentPooler,
+	  threeArgumentPooler: threeArgumentPooler,
+	  fourArgumentPooler: fourArgumentPooler
+	};
+	
+	module.exports = PooledClass;
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
 
 /***/ }
 /******/ ])));
