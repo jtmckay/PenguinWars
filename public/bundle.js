@@ -659,7 +659,7 @@
 
 /***/ },
 /* 6 */
-[245, 7],
+[246, 7],
 /* 7 */
 /***/ function(module, exports) {
 
@@ -6371,7 +6371,7 @@
 
 /***/ },
 /* 50 */
-[245, 35],
+[246, 35],
 /* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -26213,17 +26213,20 @@
 
 	"use strict";
 	const BABYLON = __webpack_require__(237);
-	const Scene_1 = __webpack_require__(238);
-	const Camera_1 = __webpack_require__(239);
-	const ParticleSystem_1 = __webpack_require__(240);
-	const Walls_1 = __webpack_require__(241);
-	const Light_1 = __webpack_require__(243);
-	const MouseControl_1 = __webpack_require__(244);
+	const Gravitator_1 = __webpack_require__(238);
+	const Scene_1 = __webpack_require__(239);
+	const Camera_1 = __webpack_require__(240);
+	const ParticleSystem_1 = __webpack_require__(241);
+	const Walls_1 = __webpack_require__(242);
+	const Light_1 = __webpack_require__(244);
+	const MouseControl_1 = __webpack_require__(245);
+	const KeyboardControl_1 = __webpack_require__(247);
+	const Character_1 = __webpack_require__(249);
+	const Snowman_1 = __webpack_require__(251);
+	const Snowball_1 = __webpack_require__(250);
 	function default_1() {
 	    let canvas = document.getElementById("renderCanvas");
 	    let options = {
-	        movementSpeed: 100,
-	        jumpSpeed: 100,
 	        invertCameraOnTouch: false,
 	        showSettings: false,
 	        showKeyboard: false,
@@ -26237,8 +26240,6 @@
 	        let light = Light_1.createLight(scene);
 	        let shadowGenerator = new BABYLON.ShadowGenerator(4096, light);
 	        let camera = Camera_1.default(scene, BABYLON.Vector3.Zero());
-	        let mouseControl = new MouseControl_1.default(canvas, camera, options.invertCameraOnTouch);
-	        mouseControl.leftMouseAction = (event) => alert('yay');
 	        canvas.addEventListener('touchstart', (event) => {
 	            camera.attachControl(canvas, true);
 	            shadowGenerator.getShadowMap().resize(1);
@@ -26249,9 +26250,13 @@
 	            material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
 	            return material;
 	        })();
+	        ground.checkCollisions = true;
 	        ground.setPhysicsState(BABYLON.PhysicsEngine.MeshImpostor, { mass: 0 });
 	        ground.receiveShadows = true;
 	        let walls = Walls_1.default(scene);
+	        let gravitator = new Gravitator_1.default(ground);
+	        let keyboardControl = new KeyboardControl_1.default(canvas, scene);
+	        let mouseControl = new MouseControl_1.default(canvas, camera, options.invertCameraOnTouch);
 	        let particleSystem = ParticleSystem_1.default(scene, {
 	            capacity: 1000,
 	            texture: new BABYLON.Texture("textures/flare.png", scene),
@@ -26259,7 +26264,7 @@
 	            color2: new BABYLON.Color4(.2, .3, 1, 1)
 	        });
 	        //runs every frame
-	        scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
+	        let task = scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
 	            var pickResult = scene.pick(scene.pointerX, scene.pointerY, function (mesh) {
 	                return mesh.name == "ground";
 	            });
@@ -26267,6 +26272,18 @@
 	                particleSystem.emitter.position = pickResult.pickedPoint;
 	            }
 	        }));
+	        let character = new Character_1.default(scene, assetsManager, camera, gravitator, ground, shadowGenerator, keyboardControl);
+	        let mouseDownTime;
+	        let mouseUpTime;
+	        let timeDifference;
+	        mouseControl.leftMouseDownAction = (event) => {
+	            mouseDownTime = new Date();
+	        };
+	        mouseControl.leftMouseUpAction = (event) => {
+	            mouseUpTime = new Date();
+	            timeDifference = (mouseUpTime - mouseDownTime) / 2;
+	            new Snowball_1.default(scene, gravitator, shadowGenerator, character.characterMesh.position, particleSystem.emitter.position, timeDifference > 500 ? 500 : timeDifference, character.physicsBody.linearVelocity);
+	        };
 	        /*
 	          BABYLON.SceneLoader.ImportMesh("penguin", "babylonjs/", "penguin.babylon", scene, function(newMeshes) {
 	            this.random = newMeshes[0];
@@ -26290,6 +26307,26 @@
 	            assetsLoaded = true;
 	            console.log("Finish");
 	            assetsManager.reset();
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+	            new Snowman_1.default(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
 	            engine.hideLoadingUI();
 	            engine.runRenderLoop(function () {
 	                scene.render();
@@ -26300,14 +26337,6 @@
 	            console.log(task);
 	        };
 	        engine.displayLoadingUI();
-	        let addCharacterMeshTask = assetsManager.addMeshTask("add character", "penguin", "babylonjs/", "penguin.babylon");
-	        addCharacterMeshTask.onSuccess = function (task) {
-	            let characterMesh = task.loadedMeshes[0];
-	            characterMesh.scaling = new BABYLON.Vector3(10, 10, 10);
-	            //addShadows(this.characterMesh);
-	            shadowGenerator.getShadowMap().renderList.push(characterMesh);
-	            //this.load();
-	        };
 	        assetsManager.load();
 	    }
 	    return options;
@@ -26365,6 +26394,83 @@
 
 	"use strict";
 	const BABYLON = __webpack_require__(237);
+	class Gravitator {
+	    constructor(ground) {
+	        this.ground = ground;
+	        this.gravity = -9.81;
+	        this.target = BABYLON.Vector3.Zero();
+	    }
+	    applyDeterioration(physicalBody) {
+	        physicalBody.angularVelocity.scaleEqual(.99);
+	        physicalBody.linearVelocity.scaleEqual(.99);
+	    }
+	    applyGravity(mesh, multiplier = 1) {
+	        mesh.applyImpulse(new BABYLON.Vector3(0, this.gravity * multiplier, 0), mesh.position);
+	    }
+	    pullTowardsGround(physicalBody, mesh, multiplier, height, sticky) {
+	        var pickInfo = this.ground.intersects(new BABYLON.Ray(new BABYLON.Vector3(mesh.position.x, mesh.position.y - height - 20, mesh.position.z), new BABYLON.Vector3(0, 1, 0)));
+	        if (pickInfo.hit) {
+	            if (mesh.position.y - height < pickInfo.pickedPoint.y + 20) {
+	                if (mesh.position.y - height < pickInfo.pickedPoint.y - 1) {
+	                    this.target.y = 0;
+	                    //this.target.x = 0;
+	                    //this.target.z = 0;
+	                    if (sticky) {
+	                        this.target.y = -physicalBody.linearVelocity.y;
+	                    }
+	                    this.target.y += (pickInfo.pickedPoint.y - (mesh.position.y - height)) *
+	                        (pickInfo.pickedPoint.y - (mesh.position.y - height));
+	                    mesh.applyImpulse(this.target, new BABYLON.Vector3(mesh.position.x, mesh.position.y, mesh.position.z));
+	                }
+	                if (sticky && mesh.position.y - height > pickInfo.pickedPoint.y + 1) {
+	                    this.target.y = 0;
+	                    if (sticky) {
+	                        this.target.y = -physicalBody.linearVelocity.y;
+	                    }
+	                    //this.target.x = 0;
+	                    //this.target.z = 0;
+	                    this.target.y -= (pickInfo.pickedPoint.y - (mesh.position.y - height)) *
+	                        (pickInfo.pickedPoint.y - (mesh.position.y - height));
+	                    mesh.applyImpulse(this.target, new BABYLON.Vector3(mesh.position.x, mesh.position.y, mesh.position.z));
+	                }
+	                return true;
+	            }
+	        }
+	        else {
+	            this.applyGravity(mesh, multiplier);
+	        }
+	        return false;
+	    }
+	    applyGravityWithGroundConstraints(physicalBody, mesh, multiplier = 1, height = 5, stickToGround = true) {
+	        if (this.ground) {
+	            return this.pullTowardsGround(physicalBody, mesh, multiplier, height, stickToGround);
+	        }
+	        return false;
+	    }
+	    removeBelowGround(mesh, scene, action) {
+	        var pickInfo = this.ground.intersects(new BABYLON.Ray(new BABYLON.Vector3(mesh.position.x, mesh.position.y, mesh.position.z), new BABYLON.Vector3(0, 1, 0)));
+	        if (pickInfo.hit) {
+	            //If the ground is within 1 of the bottom of the character (sphere diameter of 60)
+	            if (mesh.position.y < pickInfo.pickedPoint.y) {
+	                mesh.dispose();
+	                scene.actionManager.actions = scene.actionManager.actions.filter(i => i != action);
+	                return false;
+	            }
+	        }
+	        return true;
+	    }
+	}
+	;
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Gravitator;
+
+
+/***/ },
+/* 239 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const BABYLON = __webpack_require__(237);
 	function createScene(engine) {
 	    let scene = new BABYLON.Scene(engine);
 	    scene.actionManager = new BABYLON.ActionManager(scene);
@@ -26379,7 +26485,7 @@
 
 
 /***/ },
-/* 239 */
+/* 240 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26393,6 +26499,12 @@
 	    camera.radius = 500;
 	    camera.lowerBetaLimit = .1;
 	    camera.upperBetaLimit = Math.PI / 2;
+	    document.addEventListener('mousewheel', function (event) {
+	        let newRadius = camera.radius + event.deltaY / 5;
+	        if (camera.lowerRadiusLimit <= newRadius && camera.upperRadiusLimit >= newRadius) {
+	            camera.radius = newRadius;
+	        }
+	    });
 	    return camera;
 	}
 	Object.defineProperty(exports, "__esModule", { value: true });
@@ -26400,7 +26512,7 @@
 
 
 /***/ },
-/* 240 */
+/* 241 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26444,12 +26556,12 @@
 
 
 /***/ },
-/* 241 */
+/* 242 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	const BABYLON = __webpack_require__(237);
-	const Plane_1 = __webpack_require__(242);
+	const Plane_1 = __webpack_require__(243);
 	function createWalls(scene) {
 	    let red = (function () {
 	        let material = new BABYLON.StandardMaterial("texture1", scene);
@@ -26523,49 +26635,57 @@
 	        size: 4000,
 	        position: new BABYLON.Vector3(4000, 0, 0),
 	        rotation: new BABYLON.Vector3(0, Math.PI / 2 + Math.PI, 0),
-	        material: red
+	        material: red,
+	        alpha: .3
 	    });
 	    let plane10 = Plane_1.default(scene, {
 	        size: 4000,
 	        position: new BABYLON.Vector3(-4000, 0, 0),
 	        rotation: new BABYLON.Vector3(0, Math.PI - Math.PI / 2, 0),
-	        material: blue
+	        material: blue,
+	        alpha: .3
 	    });
 	    let plane11 = Plane_1.default(scene, {
 	        size: 4000,
 	        position: new BABYLON.Vector3(0, 0, -4000),
 	        rotation: new BABYLON.Vector3(Math.PI, Math.PI, 0),
-	        material: green
+	        material: green,
+	        alpha: .3
 	    });
 	    let plane12 = Plane_1.default(scene, {
 	        size: 4000,
 	        position: new BABYLON.Vector3(0, 0, 4000),
 	        rotation: new BABYLON.Vector3(0, Math.PI, 0),
-	        material: purple
+	        material: purple,
+	        alpha: .3
 	    });
 	    let plane13 = Plane_1.default(scene, {
 	        size: 2828.427125,
 	        position: new BABYLON.Vector3(3000, 0, 3000),
 	        rotation: new BABYLON.Vector3(0, Math.PI + Math.PI / 4, 0),
-	        material: red
+	        material: red,
+	        alpha: .3
 	    });
 	    let plane14 = Plane_1.default(scene, {
 	        size: 2828.427125,
 	        position: new BABYLON.Vector3(3000, 0, -3000),
 	        rotation: new BABYLON.Vector3(0, -Math.PI / 4, 0),
-	        material: blue
+	        material: blue,
+	        alpha: .3
 	    });
 	    let plane15 = Plane_1.default(scene, {
 	        size: 2828.427125,
 	        position: new BABYLON.Vector3(-3000, 0, -3000),
 	        rotation: new BABYLON.Vector3(0, Math.PI / 4, 0),
-	        material: green
+	        material: green,
+	        alpha: .3
 	    });
 	    let plane16 = Plane_1.default(scene, {
 	        size: 2828.427125,
 	        position: new BABYLON.Vector3(-3000, 0, 3000),
 	        rotation: new BABYLON.Vector3(0, Math.PI - Math.PI / 4, 0),
-	        material: purple
+	        material: purple,
+	        alpha: .3
 	    });
 	    let ceiling = Plane_1.default(scene, {
 	        size: 8000,
@@ -26603,7 +26723,7 @@
 
 
 /***/ },
-/* 242 */
+/* 243 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26613,6 +26733,10 @@
 	    plane.position = options.position;
 	    plane.rotation = options.rotation;
 	    plane.material = options.material;
+	    if (options.alpha) {
+	        plane.material.alpha = options.alpha;
+	    }
+	    plane.checkCollisions = true;
 	    plane.setPhysicsState(BABYLON.PhysicsEngine.PlaneImpostor, { mass: 0 });
 	    return plane;
 	}
@@ -26621,7 +26745,7 @@
 
 
 /***/ },
-/* 243 */
+/* 244 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -26642,7 +26766,7 @@
 
 
 /***/ },
-/* 244 */
+/* 245 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -26716,8 +26840,10 @@
 	        this.camera.detachControl(this.canvas);
 	    }
 	    mouseDown(event) {
-	        console.log('mouseDown');
 	        event.preventDefault();
+	        if (event.which == 1) {
+	            this.leftMouseDownAction(event);
+	        }
 	        if (!this.stickyRightMouse && event.which == 3) {
 	            this.lockPointer();
 	        }
@@ -26729,10 +26855,9 @@
 	        }
 	    }
 	    mouseUp(event) {
-	        console.log('mouseUp');
 	        event.preventDefault();
 	        if (event.which == 1) {
-	            this.leftMouseAction(event);
+	            this.leftMouseUpAction(event);
 	        }
 	        if (!this.stickyRightMouse && event.which == 3) {
 	            this.unlockPointer();
@@ -26744,7 +26869,7 @@
 
 
 /***/ },
-/* 245 */
+/* 246 */
 /***/ function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {/**
@@ -26859,6 +26984,451 @@
 	
 	module.exports = PooledClass;
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
+
+/***/ },
+/* 247 */
+/***/ function(module, exports) {
+
+	"use strict";
+	class default_1 {
+	    constructor(canvas, scene) {
+	        this.canvas = canvas;
+	        this.scene = scene;
+	        this.lastKeyTime = new Date();
+	        this.lastKeyup = false;
+	        this.keydownMatch = false;
+	        this.w = false;
+	        this.a = false;
+	        this.s = false;
+	        this.d = false;
+	        this.doubleW = false;
+	        this.doubleA = false;
+	        this.doubleS = false;
+	        this.doubleD = false;
+	        this.shift = false;
+	        this.space = false;
+	        this.control = false;
+	        this.displayOnScreenKeyboard = false;
+	        let currentTime;
+	        let timeBetween = 300;
+	        document.addEventListener('keydown', function (event) {
+	            if (event.keyCode == 87) {
+	                this.check(87);
+	                this.w = true;
+	            }
+	            if (event.keyCode == 65) {
+	                this.check(65);
+	                this.a = true;
+	            }
+	            if (event.keyCode == 83) {
+	                this.check(83);
+	                this.s = true;
+	            }
+	            if (event.keyCode == 68) {
+	                this.check(68);
+	                this.d = true;
+	            }
+	            if (event.keyCode == 32) {
+	                this.space = true;
+	            }
+	            if (event.keyCode == 17) {
+	                this.control = true;
+	            }
+	            if (event.keyCode == 16) {
+	                this.shift = true;
+	            }
+	            this.lastKey = event.keyCode;
+	            this.lastKeyup = false;
+	        }.bind(this));
+	        document.addEventListener('keyup', function (event) {
+	            currentTime = new Date();
+	            if (event.keyCode == 87) {
+	                if (this.keydownMatch && this.lastKey == event.keyCode && currentTime - this.lastKeyTime < timeBetween) {
+	                    this.doubleW = true;
+	                }
+	                this.w = false;
+	            }
+	            if (event.keyCode == 65) {
+	                if (this.keydownMatch && this.lastKey == event.keyCode && currentTime - this.lastKeyTime < timeBetween) {
+	                    this.doubleA = true;
+	                }
+	                this.a = false;
+	            }
+	            if (event.keyCode == 83) {
+	                if (this.keydownMatch && this.lastKey == event.keyCode && currentTime - this.lastKeyTime < timeBetween) {
+	                    this.doubleS = true;
+	                }
+	                this.s = false;
+	            }
+	            if (event.keyCode == 68) {
+	                if (this.keydownMatch && this.lastKey == event.keyCode && currentTime - this.lastKeyTime < timeBetween) {
+	                    this.doubleD = true;
+	                }
+	                this.d = false;
+	            }
+	            if (event.keyCode == 32) {
+	                this.space = false;
+	            }
+	            if (event.keyCode == 17) {
+	                this.control = false;
+	            }
+	            if (event.keyCode == 16) {
+	                this.shift = false;
+	            }
+	            this.lastKeyup = true;
+	            this.lastKeyTime = currentTime;
+	        }.bind(this));
+	        this.check = this.check.bind(this);
+	        this.resetDoubles = this.resetDoubles.bind(this);
+	    }
+	    check(keycode) {
+	        if (this.lastKeyup && this.lastKey == keycode) {
+	            this.keydownMatch = true;
+	        }
+	        else {
+	            this.keydownMatch = false;
+	        }
+	    }
+	    resetDoubles() {
+	        this.doubleW = false;
+	        this.doubleA = false;
+	        this.doubleS = false;
+	        this.doubleD = false;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = default_1;
+
+
+/***/ },
+/* 248 */
+/***/ function(module, exports) {
+
+	"use strict";
+	function default_1(degrees) {
+	    return degrees * Math.PI / 180;
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = default_1;
+
+
+/***/ },
+/* 249 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const BABYLON = __webpack_require__(237);
+	const degreesToRadians_1 = __webpack_require__(248);
+	class default_1 {
+	    constructor(scene, assetsManager, camera, gravitator, ground, shadowGenerator, keyboardControl) {
+	        let baseMovementSpeed = 10;
+	        let movementSpeed;
+	        let multiplier = 1;
+	        let yVector = new BABYLON.Vector2(0, 1);
+	        let vector2 = new BABYLON.Vector2(0, 0);
+	        let angle;
+	        let applicableForce = BABYLON.Vector3.Zero();
+	        let angleAdjustment = 0;
+	        let canJump = true;
+	        let pullDown = true;
+	        let onGround = false;
+	        let dodging = false;
+	        let disabled = false;
+	        let characterAction;
+	        let addCharacterMeshTask = assetsManager.addMeshTask("add character", "penguin", "babylonjs/", "penguin.babylon");
+	        addCharacterMeshTask.onSuccess = function (task) {
+	            let characterMesh = task.loadedMeshes[0];
+	            this.characterMesh = characterMesh;
+	            characterMesh.scaling = new BABYLON.Vector3(10, 10, 10);
+	            let characterSphere = BABYLON.Mesh.CreateSphere("Character", 2, 60, scene, true);
+	            characterSphere.isVisible = false;
+	            let physicsBody = characterSphere.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 100, friction: 100, restitution: .001 });
+	            this.physicsBody = physicsBody;
+	            characterSphere.position = characterMesh.position;
+	            characterSphere.position.x += 10;
+	            camera.target = characterSphere.position;
+	            let animationVerticalShrink = new BABYLON.Animation("shrink", "scaling.y", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+	            var keys = [];
+	            keys.push({
+	                frame: 0,
+	                value: 10
+	            });
+	            keys.push({
+	                frame: 10,
+	                value: 6
+	            });
+	            keys.push({
+	                frame: 20,
+	                value: 4
+	            });
+	            keys.push({
+	                frame: 35,
+	                value: 6
+	            });
+	            keys.push({
+	                frame: 100,
+	                value: 10
+	            });
+	            animationVerticalShrink.setKeys(keys);
+	            let animationFrontFlip = this.createFlipAnimation("frontflip", "rotation.z", true);
+	            let animationBackFlip = this.createFlipAnimation("backflip", "rotation.z", false);
+	            let animationLeftFlip = this.createFlipAnimation("leftflip", "rotation.x", false);
+	            let animationRightFlip = this.createFlipAnimation("rightflip", "rotation.x", true);
+	            characterAction = scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
+	                multiplier = scene.getAnimationRatio();
+	                movementSpeed = baseMovementSpeed * multiplier;
+	                //Only pull down again once the character mesh has gone below the ground and the character can jump again
+	                if (!pullDown && canJump) {
+	                    var pickInfo = ground.intersects(new BABYLON.Ray(new BABYLON.Vector3(characterSphere.position.x, characterSphere.position.y - 10, characterSphere.position.z), new BABYLON.Vector3(0, 1, 0)));
+	                    if (pickInfo.hit) {
+	                        pullDown = true;
+	                    }
+	                }
+	                if (dodging || disabled) {
+	                    keyboardControl.resetDoubles();
+	                    onGround = gravitator.applyGravityWithGroundConstraints(physicsBody, characterSphere, multiplier, 10, true);
+	                    if (!dodging && disabled) {
+	                        applicableForce.x = -physicsBody.linearVelocity.x;
+	                        applicableForce.z = -physicsBody.linearVelocity.z;
+	                        characterSphere.applyImpulse(applicableForce, characterSphere.position);
+	                    }
+	                }
+	                else {
+	                    if (keyboardControl.space && onGround && canJump && pullDown) {
+	                        applicableForce.y = 100;
+	                        canJump = false;
+	                        pullDown = false;
+	                        setTimeout(function () {
+	                            canJump = true;
+	                        }, 500);
+	                    }
+	                    onGround = gravitator.applyGravityWithGroundConstraints(physicsBody, characterSphere, multiplier, 10, pullDown);
+	                    gravitator.applyDeterioration(physicsBody);
+	                    vector2.x = characterSphere.position.x - camera.position.x;
+	                    vector2.y = characterSphere.position.z - camera.position.z;
+	                    angle = BABYLON.Angle.BetweenTwoPoints(yVector, vector2);
+	                    if (keyboardControl.w || keyboardControl.a || keyboardControl.s || keyboardControl.d ||
+	                        keyboardControl.doubleW || keyboardControl.doubleA || keyboardControl.doubleS || keyboardControl.doubleD) {
+	                        angleAdjustment = (keyboardControl.a || keyboardControl.doubleA ? 90 : 0) - (keyboardControl.d || keyboardControl.doubleD ? 90 : 0);
+	                        if (((keyboardControl.w || keyboardControl.doubleW) &&
+	                            !keyboardControl.s && !keyboardControl.s ||
+	                            (keyboardControl.s || keyboardControl.doubleS) &&
+	                                !keyboardControl.w && !keyboardControl.doubleW)) {
+	                            angleAdjustment = angleAdjustment / 2;
+	                        }
+	                        if (!keyboardControl.w && (keyboardControl.s || keyboardControl.doubleS)) {
+	                            angleAdjustment = -angleAdjustment;
+	                        }
+	                        applicableForce.x = (!keyboardControl.w && (keyboardControl.s || keyboardControl.doubleS) ? -movementSpeed : movementSpeed) * Math.cos(angle.radians() + degreesToRadians_1.default(angleAdjustment));
+	                        applicableForce.z = (!keyboardControl.w && (keyboardControl.s || keyboardControl.doubleS) ? -movementSpeed : movementSpeed) * Math.sin(angle.radians() + degreesToRadians_1.default(angleAdjustment));
+	                    }
+	                    else {
+	                        keyboardControl.resetDoubles();
+	                    }
+	                    if (keyboardControl.shift) {
+	                        keyboardControl.resetDoubles();
+	                        //Glide movement
+	                        characterSphere.applyImpulse(applicableForce, characterSphere.position);
+	                    }
+	                    else {
+	                        if (keyboardControl.doubleW || keyboardControl.doubleA || keyboardControl.doubleS || keyboardControl.doubleD) {
+	                            //Dodge movement
+	                            if (keyboardControl.w || keyboardControl.doubleW) {
+	                                characterMesh.animations.push(animationVerticalShrink);
+	                                characterMesh.animations.push(animationFrontFlip);
+	                                scene.beginAnimation(characterMesh, 0, 100, false, 1, function () {
+	                                    characterMesh.animations.length = 0;
+	                                }.bind(this));
+	                            }
+	                            else if (keyboardControl.s || keyboardControl.doubleS) {
+	                                characterMesh.animations.push(animationVerticalShrink);
+	                                characterMesh.animations.push(animationBackFlip);
+	                                scene.beginAnimation(characterMesh, 0, 100, false, 1, function () {
+	                                    characterMesh.animations.length = 0;
+	                                }.bind(this));
+	                            }
+	                            else if ((keyboardControl.a || keyboardControl.doubleA) && !keyboardControl.d && !keyboardControl.doubleD) {
+	                                characterMesh.animations.push(animationVerticalShrink);
+	                                characterMesh.animations.push(animationLeftFlip);
+	                                scene.beginAnimation(characterMesh, 0, 100, false, 1, function () {
+	                                    characterMesh.animations.length = 0;
+	                                }.bind(this));
+	                            }
+	                            else if ((keyboardControl.d || keyboardControl.doubleD) && !keyboardControl.a && !keyboardControl.doubleA) {
+	                                characterMesh.animations.push(animationRightFlip);
+	                                characterMesh.animations.push(animationVerticalShrink);
+	                                scene.beginAnimation(characterMesh, 0, 100, false, 1, function () {
+	                                    characterMesh.animations.length = 0;
+	                                }.bind(this));
+	                            }
+	                            applicableForce.x = applicableForce.x * 100 - physicsBody.linearVelocity.x;
+	                            applicableForce.z = applicableForce.z * 100 - physicsBody.linearVelocity.z;
+	                            dodging = true;
+	                            disabled = true;
+	                            setTimeout(function () {
+	                                dodging = false;
+	                            }, 200);
+	                            //Delay before allowing movement again
+	                            //See KeyboardControl keyup
+	                            setTimeout(function () {
+	                                disabled = false;
+	                            }, 1500);
+	                        }
+	                        else {
+	                            //Strict movement
+	                            applicableForce.x = applicableForce.x * 20 - physicsBody.linearVelocity.x;
+	                            applicableForce.z = applicableForce.z * 20 - physicsBody.linearVelocity.z;
+	                        }
+	                        characterSphere.applyImpulse(applicableForce, characterSphere.position);
+	                    }
+	                    applicableForce.x = 0;
+	                    applicableForce.y = 0;
+	                    applicableForce.z = 0;
+	                    characterMesh.rotation.y = -camera.alpha -
+	                        ((keyboardControl.w || keyboardControl.doubleW) && (keyboardControl.a || keyboardControl.doubleA) ? degreesToRadians_1.default(45) : 0) +
+	                        ((keyboardControl.w || keyboardControl.doubleW) && (keyboardControl.d || keyboardControl.doubleD) ? degreesToRadians_1.default(45) : 0) +
+	                        ((keyboardControl.s || keyboardControl.doubleS) && (keyboardControl.a || keyboardControl.doubleA) ? degreesToRadians_1.default(45) : 0) -
+	                        ((keyboardControl.s || keyboardControl.doubleS) && (keyboardControl.d || keyboardControl.doubleD) ? degreesToRadians_1.default(45) : 0);
+	                }
+	            }.bind(this)));
+	            shadowGenerator.getShadowMap().renderList.push(characterMesh);
+	        }.bind(this);
+	    }
+	    createFlipAnimation(name, targetProperty, positive = true) {
+	        var animationFlip = new BABYLON.Animation(name, targetProperty, 90, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+	        var keys = [];
+	        keys.push({
+	            frame: 0,
+	            value: 0
+	        });
+	        keys.push({
+	            frame: 10,
+	            value: degreesToRadians_1.default(positive ? 90 : -90)
+	        });
+	        keys.push({
+	            frame: 20,
+	            value: degreesToRadians_1.default(positive ? 180 : -180)
+	        });
+	        keys.push({
+	            frame: 35,
+	            value: degreesToRadians_1.default(positive ? 270 : -270)
+	        });
+	        keys.push({
+	            frame: 100,
+	            value: degreesToRadians_1.default(positive ? 360 : -360)
+	        });
+	        animationFlip.setKeys(keys);
+	        return animationFlip;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = default_1;
+
+
+/***/ },
+/* 250 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const BABYLON = __webpack_require__(237);
+	const ParticleSystem_1 = __webpack_require__(241);
+	class default_1 {
+	    constructor(scene, gravitator, shadowGenerator, characterPosition, targetPosition, vertical, additionalImpulse = BABYLON.Vector3.Zero()) {
+	        let snowBall = BABYLON.Mesh.CreateSphere("Snowball", 6, 10, scene, true);
+	        shadowGenerator.getShadowMap().renderList.push(snowBall);
+	        let material = new BABYLON.StandardMaterial("texture1", scene);
+	        material.emissiveColor = new BABYLON.Color3(1, 1, 1);
+	        snowBall.material = material;
+	        snowBall.position = new BABYLON.Vector3(characterPosition.x, characterPosition.y + 20, characterPosition.z);
+	        let particleSystem = ParticleSystem_1.default(scene, {
+	            capacity: 500,
+	            texture: new BABYLON.Texture("textures/flare.png", scene),
+	            color1: new BABYLON.Color4(1, 1, 1, 1),
+	            color2: new BABYLON.Color4(1, 1, 1, 1)
+	        });
+	        particleSystem.disposeOnStop = true;
+	        particleSystem.emitter.position = snowBall.position;
+	        let physicalSnowBall = snowBall.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 1000 });
+	        let x = targetPosition.x - snowBall.position.x;
+	        let y = targetPosition.y - snowBall.position.y;
+	        let z = targetPosition.z - snowBall.position.z;
+	        let vector1 = new BABYLON.Vector2(0, 1);
+	        //Target position relative to the character
+	        let vector2 = new BABYLON.Vector2(x, z);
+	        let angle = BABYLON.Angle.BetweenTwoPoints(vector1, vector2);
+	        let distance = Math.sqrt(x * x + z * z);
+	        let vector3 = new BABYLON.Vector2(distance, y);
+	        let verticalAngle = BABYLON.Angle.BetweenTwoPoints(vector1, vector3);
+	        let sceneAnimationRatio = scene.getAnimationRatio();
+	        let power = 1000 * sceneAnimationRatio;
+	        snowBall.applyImpulse(new BABYLON.Vector3(power * Math.cos(angle.radians()) + additionalImpulse.x, vertical + additionalImpulse.y, power * Math.sin(angle.radians()) + additionalImpulse.z), snowBall.position);
+	        let action = scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
+	            if (gravitator.removeBelowGround(snowBall, scene, action)) {
+	                gravitator.applyGravity(snowBall, scene.getAnimationRatio());
+	            }
+	            else {
+	                particleSystem.stop();
+	            }
+	        }.bind(this)));
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = default_1;
+
+
+/***/ },
+/* 251 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const BABYLON = __webpack_require__(237);
+	class default_1 {
+	    constructor(scene, gravitator, ground, shadowGenerator, target) {
+	        let baseMovementSpeed = 1;
+	        let multiplier = 1;
+	        let yVector = new BABYLON.Vector2(0, 1);
+	        let vector2 = new BABYLON.Vector2(0, 0);
+	        let angle;
+	        let applicableForce = BABYLON.Vector3.Zero();
+	        let snowmanAction;
+	        BABYLON.SceneLoader.ImportMesh("snowman", "babylonjs/", "snowman.babylon", scene, function (newMeshes) {
+	            let snowmanMesh = newMeshes[0];
+	            this.snowmanMesh = snowmanMesh;
+	            snowmanMesh.scaling = new BABYLON.Vector3(15, 15, 15);
+	            let snowmanSphere = BABYLON.MeshBuilder.CreateSphere("Snowman", { segments: 2, diameter: 80 }, scene);
+	            snowmanSphere.isVisible = false;
+	            let physicsBody = snowmanSphere.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 1, friction: 100, restitution: .001 });
+	            this.physicsBody = physicsBody;
+	            snowmanSphere.position = snowmanMesh.position;
+	            /*
+	            snowmanSphere.position.x = target.x + (Math.random() * 200 + 500) * this.randomOperator();
+	            snowmanSphere.position.z = target.z + (Math.random() * 200 + 500) * this.randomOperator();
+	            snowmanSphere.position.x = snowmanSphere.position.x > 3000 ? 3000 : snowmanSphere.position.x < -3000 ? -3000 : snowmanSphere.position.x;
+	            snowmanSphere.position.z = snowmanSphere.position.z > 3000 ? 3000 : snowmanSphere.position.z < -3000 ? -3000 : snowmanSphere.position.z;
+	            console.log(snowmanSphere.position);
+	            */
+	            snowmanAction = scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
+	                multiplier = scene.getAnimationRatio();
+	                gravitator.applyGravityWithGroundConstraints(physicsBody, snowmanSphere, multiplier, 30);
+	                gravitator.applyDeterioration(physicsBody);
+	                vector2.x = target.x - snowmanMesh.position.x;
+	                vector2.y = target.z - snowmanMesh.position.z;
+	                angle = BABYLON.Angle.BetweenTwoPoints(yVector, vector2);
+	                applicableForce.x = Math.cos(angle.radians()) * multiplier * baseMovementSpeed;
+	                applicableForce.z = Math.sin(angle.radians()) * multiplier * baseMovementSpeed;
+	                snowmanSphere.applyImpulse(applicableForce, snowmanSphere.position);
+	                snowmanMesh.rotation.y = -angle.radians();
+	            }.bind(this)));
+	            shadowGenerator.getShadowMap().renderList.push(snowmanMesh);
+	        }.bind(this));
+	    }
+	    randomOperator() {
+	        return Math.round(Math.random() * 1) % 2;
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = default_1;
+
 
 /***/ }
 /******/ ])));

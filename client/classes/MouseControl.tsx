@@ -24,7 +24,8 @@ export default class {
   pointerLocked: boolean = false;
 
   stickyRightMouse: boolean;
-  leftMouseAction: (event) => void;
+  leftMouseDownAction: (event) => void;
+  leftMouseUpAction: (event) => void;
 
   /*
   let mouseSensitivityStart = 1500;
@@ -83,8 +84,10 @@ export default class {
   }
 
   mouseDown(event) {
-    console.log('mouseDown');
     event.preventDefault();
+    if (event.which == 1) {
+      this.leftMouseDownAction(event);
+    }
     if (!this.stickyRightMouse && event.which == 3) {
       this.lockPointer();
     }
@@ -97,10 +100,9 @@ export default class {
   }
 
   mouseUp(event) {
-    console.log('mouseUp');
     event.preventDefault();
     if (event.which == 1) {
-      this.leftMouseAction(event);
+      this.leftMouseUpAction(event);
     }
     if (!this.stickyRightMouse && event.which == 3) {
       this.unlockPointer();

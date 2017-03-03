@@ -75,49 +75,57 @@ function createWalls(scene: BABYLON.Scene): Array<BABYLON.Mesh> {
     size: 4000,
     position: new BABYLON.Vector3(4000, 0, 0),
     rotation: new BABYLON.Vector3(0, Math.PI/2+Math.PI, 0),
-    material: red
+    material: red,
+    alpha: .3
   });
   let plane10 = createPlane(scene, {
     size: 4000,
     position: new BABYLON.Vector3(-4000, 0, 0),
     rotation: new BABYLON.Vector3(0, Math.PI-Math.PI/2, 0),
-    material: blue
+    material: blue,
+    alpha: .3
   });
   let plane11 = createPlane(scene, {
     size: 4000,
     position: new BABYLON.Vector3(0, 0, -4000),
     rotation: new BABYLON.Vector3(Math.PI, Math.PI, 0),
-    material: green
+    material: green,
+    alpha: .3
   });
   let plane12 = createPlane(scene, {
     size: 4000,
     position: new BABYLON.Vector3(0, 0, 4000),
     rotation: new BABYLON.Vector3(0, Math.PI, 0),
-    material: purple
+    material: purple,
+    alpha: .3
   });
   let plane13 = createPlane(scene, {
     size: 2828.427125,
     position: new BABYLON.Vector3(3000, 0, 3000),
     rotation: new BABYLON.Vector3(0, Math.PI+Math.PI/4, 0),
-    material: red
+    material: red,
+    alpha: .3
   });
   let plane14 = createPlane(scene, {
     size: 2828.427125,
     position: new BABYLON.Vector3(3000, 0, -3000),
     rotation: new BABYLON.Vector3(0, -Math.PI/4, 0),
-    material: blue
+    material: blue,
+    alpha: .3
   });
   let plane15 = createPlane(scene, {
     size: 2828.427125,
     position: new BABYLON.Vector3(-3000, 0, -3000),
     rotation: new BABYLON.Vector3(0, Math.PI/4, 0),
-    material: green
+    material: green,
+    alpha: .3
   });
   let plane16 = createPlane(scene, {
     size: 2828.427125,
     position: new BABYLON.Vector3(-3000, 0, 3000),
     rotation: new BABYLON.Vector3(0, Math.PI-Math.PI/4, 0),
-    material: purple
+    material: purple,
+    alpha: .3
   });
   let ceiling = createPlane(scene, {
     size: 8000,

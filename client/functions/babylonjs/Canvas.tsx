@@ -1,4 +1,5 @@
 import * as BABYLON from 'babylonjs';
+import Gravitator from './Gravitator';
 import Settings from '../../classes/Settings';
 import createScene from './Scene';
 import createArcRotateCamera from './Camera';
@@ -6,13 +7,15 @@ import createParticleSystem from './Meshes/ParticleSystem';
 import createWalls from './Meshes/Walls';
 import { createLight, createHemisphericLight } from './Light';
 import MouseControl from '../../classes/MouseControl';
+import KeyboardControl from '../../classes/KeyboardControl';
+import Character from './Meshes/Character';
+import Snowman from './Meshes/Snowman';
+import Snowball from './Meshes/Snowball';
 
 export default function () {
   let canvas = (document.getElementById("renderCanvas") as HTMLCanvasElement);
 
   let options: Settings = {
-    movementSpeed: 100,
-    jumpSpeed: 100,
     invertCameraOnTouch: false,
     showSettings: false,
     showKeyboard: false,
@@ -30,22 +33,25 @@ export default function () {
     let shadowGenerator = new BABYLON.ShadowGenerator(4096, light);
 
     let camera = createArcRotateCamera(scene, BABYLON.Vector3.Zero());
-    let mouseControl = new MouseControl(canvas, camera, options.invertCameraOnTouch);
-    mouseControl.leftMouseAction = (event) => alert('yay');
     canvas.addEventListener('touchstart', (event) => {
       camera.attachControl(canvas, true);
       shadowGenerator.getShadowMap().resize(1);
     });
+
     let ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/A1.jpg", 8000, 8000, 50, -500, 500, scene);
     ground.material = (function() {
       let material = new BABYLON.StandardMaterial("texture1", scene);
       material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
       return material;
     })();
+    ground.checkCollisions = true;
     ground.setPhysicsState(BABYLON.PhysicsEngine.MeshImpostor, {mass: 0});
     ground.receiveShadows = true;
 
     let walls = createWalls(scene);
+    let gravitator = new Gravitator(ground);
+    let keyboardControl = new KeyboardControl(canvas, scene);
+    let mouseControl = new MouseControl(canvas, camera, options.invertCameraOnTouch);
 
     let particleSystem = createParticleSystem(scene, {
       capacity: 1000,
@@ -54,7 +60,7 @@ export default function () {
       color2: new BABYLON.Color4(.2, .3, 1, 1) }
     );
     //runs every frame
-    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
+    let task = scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
       var pickResult = scene.pick(scene.pointerX, scene.pointerY, function (mesh) {
         return mesh.name == "ground";
       });
@@ -64,6 +70,23 @@ export default function () {
       }
 
     }));
+    let character = new Character(scene, assetsManager, camera, gravitator, ground, shadowGenerator, keyboardControl);
+    let mouseDownTime;
+    let mouseUpTime;
+    let timeDifference: number;
+    mouseControl.leftMouseDownAction = (event) => {
+      mouseDownTime = new Date();
+    };
+    mouseControl.leftMouseUpAction = (event) => {
+      mouseUpTime = new Date();
+      timeDifference = (mouseUpTime - mouseDownTime)/2;
+      new Snowball(scene, gravitator, shadowGenerator,
+        character.characterMesh.position,
+        particleSystem.emitter.position,
+        timeDifference > 500 ? 500  : timeDifference,
+        character.physicsBody.linearVelocity
+      );
+    };
   /*
     BABYLON.SceneLoader.ImportMesh("penguin", "babylonjs/", "penguin.babylon", scene, function(newMeshes) {
       this.random = newMeshes[0];
@@ -89,6 +112,27 @@ export default function () {
       console.log("Finish");
       assetsManager.reset();
 
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+      new Snowman(scene, gravitator, ground, shadowGenerator, character.characterMesh.position);
+
       engine.hideLoadingUI();
       engine.runRenderLoop(function () {
         scene.render();
@@ -99,15 +143,6 @@ export default function () {
       console.log(task);
     };
     engine.displayLoadingUI();
-
-    let addCharacterMeshTask = assetsManager.addMeshTask("add character", "penguin", "babylonjs/", "penguin.babylon");
-    addCharacterMeshTask.onSuccess = function(task: any) {
-      let characterMesh = task.loadedMeshes[0];
-      characterMesh.scaling = new BABYLON.Vector3(10, 10, 10);
-      //addShadows(this.characterMesh);
-      shadowGenerator.getShadowMap().renderList.push(characterMesh);
-      //this.load();
-    };
     assetsManager.load();
   }
   return options;

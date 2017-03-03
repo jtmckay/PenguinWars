@@ -9,6 +9,14 @@ function createArcRotateCamera(scene: BABYLON.Scene, target: BABYLON.Vector3) {
   camera.radius = 500;
   camera.lowerBetaLimit = .1;
   camera.upperBetaLimit = Math.PI/2;
+
+  document.addEventListener('mousewheel', function (event) {
+    let newRadius = camera.radius + event.deltaY/5;
+    if (camera.lowerRadiusLimit <= newRadius && camera.upperRadiusLimit >= newRadius) {
+      camera.radius = newRadius;
+    }
+  });
+
   return camera;
 }
 
