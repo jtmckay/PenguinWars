@@ -1,11 +1,15 @@
 import * as BABYLON from 'babylonjs';
 
 class Gravitator {
-  constructor(ground: BABYLON.Mesh) {
+  constructor(scene: BABYLON.Scene, ground: BABYLON.Mesh) {
+    this.scene = scene;
     this.ground = ground;
     this.gravity = -9.81;
     this.target = BABYLON.Vector3.Zero();
+
+    this.removeBelowGround = this.removeBelowGround.bind(this);
   }
+  scene: BABYLON.Scene;
   ground: BABYLON.Mesh;
   gravity: number;
   target: BABYLON.Vector3;
@@ -69,17 +73,20 @@ class Gravitator {
     return false;
   }
 
-  removeBelowGround(mesh: BABYLON.Mesh, scene: BABYLON.Scene, action: BABYLON.Action): boolean {
+  removeBelowGround(mesh: BABYLON.Mesh, action: BABYLON.Action, offset: number = 0, secondMesh?: BABYLON.Mesh): boolean {
     var pickInfo = this.ground.intersects(
       new BABYLON.Ray(
-        new BABYLON.Vector3(mesh.position.x, mesh.position.y, mesh.position.z),
+        new BABYLON.Vector3(mesh.position.x, mesh.position.y + offset, mesh.position.z),
         new BABYLON.Vector3(0, 1, 0)
       ));
     if (pickInfo.hit) {
       //If the ground is within 1 of the bottom of the character (sphere diameter of 60)
       if (mesh.position.y < pickInfo.pickedPoint.y) {
         mesh.dispose();
-        scene.actionManager.actions = scene.actionManager.actions.filter(i => i != action);
+        if (secondMesh) {
+          secondMesh.dispose();
+        }
+        this.scene.actionManager.actions = this.scene.actionManager.actions.filter(i => i != action);
         return false;
       }
     }

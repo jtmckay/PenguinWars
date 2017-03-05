@@ -11,88 +11,35 @@ interface State {
 class HomePage extends React.Component<{}, State> {
   constructor(props) {
     super(props);
-
-    this.keyDown = this.keyDown.bind(this);
-    this.changeSetting = this.changeSetting.bind(this);
-
-    this.canvasOptions = Canvas();
-
-    this.state ={
-      showSettings: this.canvasOptions.showSettings,
-      showKeyboard: this.canvasOptions.showKeyboard
-    };
+    this.canvas = new Canvas(() => this.setState({}));
   }
-  canvasOptions;
-
-  keyDown(event) {
-    if (event.key == 'Escape') {
-      this.setState({showSettings: !this.state.showSettings});
-    }
-  }
-
-  changeSetting(groupName: string, settingName: string, settingValue: any) {
-    let newGroup = {};
-    let newSetting = {};
-    newSetting[settingName] = settingValue;
-    if (groupName == "keyboard") {
-      if (settingValue == true) {
-        if (settingName == 'q') {
-          newSetting['w'] = true;
-          newSetting['a'] = true;
-          newSetting['s'] = false;
-          newSetting['d'] = false;
-        }
-        if (settingName == 'e') {
-          newSetting['w'] = true;
-          newSetting['a'] = false;
-          newSetting['s'] = false;
-          newSetting['d'] = true;
-        }
-        if (settingName == 'z') {
-          newSetting['w'] = false;
-          newSetting['a'] = true;
-          newSetting['s'] = true;
-          newSetting['d'] = false;
-        }
-        if (settingName == 'c') {
-          newSetting['w'] = false;
-          newSetting['a'] = false;
-          newSetting['s'] = true;
-          newSetting['d'] = true;
-        }
-        if (settingName == 'w') {
-          newSetting['a'] = false;
-          newSetting['s'] = false;
-          newSetting['d'] = false;
-        }
-          if (settingName == 's') {
-            newSetting['w'] = false;
-            newSetting['a'] = false;
-            newSetting['d'] = false;
-          }
-        if (settingName == 'a') {
-          newSetting['d'] = false;
-          newSetting['w'] = false;
-          newSetting['s'] = false;
-        }
-        if (settingName == 'd') {
-          newSetting['a'] = false;
-          newSetting['w'] = false;
-          newSetting['s'] = false;
-        }
-        if (settingName == "stop") {
-          newSetting['w'] = false;
-          newSetting['a'] = false;
-          newSetting['s'] = false;
-          newSetting['d'] = false;
-        }
-      }
-    }
-  }
+  canvas: Canvas;
 
   render() {
     return (
-      <div onKeyDown={this.keyDown}>
+      <div>
+        <div style={{position: "absolute", margin: 5, padding: 5, backgroundColor: "white"}}>
+          <div>
+            Melt Count: {this.canvas.killCount}
+          </div>
+          <div>
+            Lives: {this.canvas.character.characterHealth}
+          </div>
+        </div>
+        {this.canvas && this.canvas.character && this.canvas.character.characterHealth <= 0
+        ?
+          <div style={{textAlign: "center", position: "absolute", backgroundColor: "white", opacity: .8, width: "100%", height: "100%"}}>
+            <br />
+            <br />
+            <h1>You're frozen!</h1>
+            <br />
+            <h2>GG</h2>
+            <br />
+            <h2>{this.canvas.killCount} meltings</h2>
+          </div>
+        :
+          null
+        }
       </div>
     );
   }

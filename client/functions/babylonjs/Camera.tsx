@@ -6,7 +6,7 @@ function createArcRotateCamera(scene: BABYLON.Scene, target: BABYLON.Vector3) {
   camera.inertia = 0;
   camera.lowerRadiusLimit = 200;
   camera.upperRadiusLimit = 1000;
-  camera.radius = 500;
+  camera.radius = 700;
   camera.lowerBetaLimit = .1;
   camera.upperBetaLimit = Math.PI/2;
 

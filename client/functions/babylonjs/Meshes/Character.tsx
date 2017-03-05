@@ -11,7 +11,7 @@ export default class {
     ground: BABYLON.Mesh,
     shadowGenerator: BABYLON.ShadowGenerator,
     keyboardControl: KeyboardControl) {
-
+    this.characterHealth = 3;
     let baseMovementSpeed = 10;
     let movementSpeed;
     let multiplier = 1;
@@ -33,6 +33,7 @@ export default class {
       this.characterMesh = characterMesh;
       characterMesh.scaling = new BABYLON.Vector3(10, 10, 10);
       let characterSphere = BABYLON.Mesh.CreateSphere("Character", 2, 60, scene, true);
+      this.characterSphere = characterSphere;
       characterSphere.isVisible = false;
       let physicsBody = characterSphere.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor,
         {mass: 100, friction: 100, restitution: .001});
@@ -194,7 +195,9 @@ export default class {
     }.bind(this);
   }
   characterMesh: BABYLON.Mesh;
+  characterSphere: BABYLON.Mesh;
   physicsBody: any;
+  characterHealth: number;
 
   createFlipAnimation(name: string, targetProperty: string, positive: boolean = true) {
     var animationFlip = new BABYLON.Animation(name, targetProperty, 90, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);

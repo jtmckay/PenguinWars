@@ -3,7 +3,7 @@ import * as React from 'react';
 class LayoutPage extends React.Component<{}, {}> {
   render() {
     return (
-      <div style={{position: "absolute"}}>
+      <div>
         <div>
         </div>
         <div>

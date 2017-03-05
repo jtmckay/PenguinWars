@@ -3,7 +3,8 @@ import Gravitator from '../Gravitator';
 import createParticleSystem from './ParticleSystem';
 
 export default class {
-  constructor(scene: BABYLON.Scene,
+  constructor(dispose: (snowball: any) => void,
+    scene: BABYLON.Scene,
     gravitator: Gravitator,
     shadowGenerator: BABYLON.ShadowGenerator,
     characterPosition: BABYLON.Vector3,
@@ -11,6 +12,7 @@ export default class {
     vertical: number,
     additionalImpulse: BABYLON.Vector3 = BABYLON.Vector3.Zero()) {
     let snowBall = BABYLON.Mesh.CreateSphere("Snowball", 6, 10, scene, true);
+    this.snowballMesh = snowBall;
     shadowGenerator.getShadowMap().renderList.push(snowBall);
     let material = new BABYLON.StandardMaterial("texture1", scene);
     material.emissiveColor = new BABYLON.Color3(1, 1, 1);
@@ -47,13 +49,15 @@ export default class {
       ),
       snowBall.position);
     let action = scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
-      if (gravitator.removeBelowGround(snowBall, scene, action)) {
+      if (gravitator.removeBelowGround(snowBall, action)) {
         gravitator.applyGravity(snowBall, scene.getAnimationRatio());
       }
-      //removed
+      //remove
       else {
         particleSystem.stop();
+        dispose(this);
       }
     }.bind(this)));
   }
+  snowballMesh: BABYLON.Mesh;
 }
