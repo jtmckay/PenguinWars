@@ -39,7 +39,7 @@ export default class {
         {mass: 100, friction: 100, restitution: .001});
       this.physicsBody = physicsBody;
       characterSphere.position = characterMesh.position;
-      characterSphere.position.x += 10;
+      characterSphere.position.x += 50;
       camera.target = characterSphere.position;
       let animationVerticalShrink = new BABYLON.Animation("shrink", "scaling.y", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
       var keys = [];

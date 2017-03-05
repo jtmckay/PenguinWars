@@ -204,10 +204,10 @@ export default class {
         if (snowman.hits.findIndex(i => i == snowball) < 0) {
           snowman.hits.push(snowball);
           this.snowmen = this.snowmen.filter(i => i != snowman);
+          this.killCount++;
           if (this.killCount%25==0) {
             this.character.characterHealth++;
           }
-          this.killCount++;
           this.timer = this.timer*.95;
           this.reloadReact();
         }

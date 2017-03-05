@@ -36,6 +36,8 @@ class HomePage extends React.Component<{}, State> {
             <h2>GG</h2>
             <br />
             <h2>{this.canvas.killCount} meltings</h2>
+            <br />
+            <a href="#" onClick={() => location.reload()}>Restart</a>
           </div>
         :
           null

@@ -26149,7 +26149,9 @@
 	                        React.createElement("br", null),
 	                        React.createElement("h2", null,
 	                            this.canvas.killCount,
-	                            " meltings"))
+	                            " meltings"),
+	                        React.createElement("br", null),
+	                        React.createElement("a", { href: "#", onClick: () => location.reload() }, "Restart"))
 	                :
 	                    null));
 	    }
@@ -26321,10 +26323,10 @@
 	                if (snowman.hits.findIndex(i => i == snowball) < 0) {
 	                    snowman.hits.push(snowball);
 	                    this.snowmen = this.snowmen.filter(i => i != snowman);
+	                    this.killCount++;
 	                    if (this.killCount % 25 == 0) {
 	                        this.character.characterHealth++;
 	                    }
-	                    this.killCount++;
 	                    this.timer = this.timer * .95;
 	                    this.reloadReact();
 	                }
@@ -27161,7 +27163,7 @@
 	            let physicsBody = characterSphere.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 100, friction: 100, restitution: .001 });
 	            this.physicsBody = physicsBody;
 	            characterSphere.position = characterMesh.position;
-	            characterSphere.position.x += 10;
+	            characterSphere.position.x += 50;
 	            camera.target = characterSphere.position;
 	            let animationVerticalShrink = new BABYLON.Animation("shrink", "scaling.y", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
 	            var keys = [];
