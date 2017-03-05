@@ -26181,8 +26181,9 @@
 	    constructor(reloadReact) {
 	        this.reloadReact = reloadReact;
 	        this.program = this.program.bind(this);
-	        this.checkSnowmanHit = this.checkSnowmanHit.bind(this);
-	        this.checkSnowballHit = this.checkSnowballHit.bind(this);
+	        this.checkSnowman = this.checkSnowman.bind(this);
+	        this.checkSnowballHitSnowman = this.checkSnowballHitSnowman.bind(this);
+	        this.checkSnowballHitCharacter = this.checkSnowballHitCharacter.bind(this);
 	        this.checkCharacterCollision = this.checkCharacterCollision.bind(this);
 	        let canvas = document.getElementById("renderCanvas");
 	        let options = {
@@ -26206,7 +26207,7 @@
 	                camera.attachControl(canvas, true);
 	                shadowGenerator.getShadowMap().resize(1);
 	            });
-	            let ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/A1.jpg", 8000, 8000, 50, -300, 300, scene);
+	            let ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/A1.jpg", 8000, 8000, 50, -200, 200, scene);
 	            this.ground = ground;
 	            ground.material = (function () {
 	                let material = new BABYLON.StandardMaterial("texture1", scene);
@@ -26242,7 +26243,8 @@
 	            let character = new Character_1.default(scene, assetsManager, camera, gravitator, ground, shadowGenerator, keyboardControl);
 	            this.character = character;
 	            this.snowmen = [];
-	            this.snowballs = [];
+	            this.characterSnowballs = [];
+	            this.snowmenSnowballs = [];
 	            /*
 	              BABYLON.SceneLoader.ImportMesh("penguin", "babylonjs/", "penguin.babylon", scene, function(newMeshes) {
 	                this.random = newMeshes[0];
@@ -26283,14 +26285,17 @@
 	        this.temporarySnowmanIgnoreList = [];
 	    }
 	    infiniteLoop(callback) {
-	        console.log(this.timer);
 	        callback();
 	        setTimeout(function () {
 	            this.infiniteLoop(callback);
 	        }.bind(this), this.timer);
 	    }
 	    program() {
-	        this.timer = 3000;
+	        this.timer = 5000;
+	        let red3 = new BABYLON.Color3(1, 0, 0);
+	        let red4 = new BABYLON.Color4(1, 0, 0, 1);
+	        let white3 = new BABYLON.Color3(1, 1, 1);
+	        let white4 = new BABYLON.Color4(1, 1, 1, 1);
 	        let mouseDownTime;
 	        let mouseUpTime;
 	        let timeDifference;
@@ -26300,24 +26305,29 @@
 	        this.mouseControl.leftMouseUpAction = function (event) {
 	            mouseUpTime = new Date();
 	            timeDifference = (mouseUpTime - mouseDownTime) / 2;
-	            this.snowballs.push(new Snowball_1.default((snowball) => this.snowballs = this.snowballs.filter(i => i != snowball), this.scene, this.gravitator, this.shadowGenerator, this.character.characterMesh.position, this.pointerParticleSystem.emitter.position, timeDifference > 500 ? 500 : timeDifference, this.character.physicsBody.linearVelocity));
+	            this.characterSnowballs.push(new Snowball_1.default((snowball) => this.characterSnowballs = this.characterSnowballs.filter(i => i != snowball), this.scene, this.gravitator, this.shadowGenerator, this.character.characterMesh.position, this.pointerParticleSystem.emitter.position, timeDifference / 2 > 300 ? 300 : timeDifference / 2, this.character.physicsBody.linearVelocity, red3, red4, red4));
 	        }.bind(this);
 	        this.infiniteLoop(function () {
-	            if (this.snowmen.length < 100) {
-	                this.snowmen.push(new Snowman_1.default(function (snowman) {
-	                }.bind(this), this.scene, this.gravitator, this.ground, this.shadowGenerator, this.character.characterMesh.position, this.keyboardControl));
+	            if (this.snowmen.length < 100 && this.character.characterHealth > 0) {
+	                let snowman = new Snowman_1.default(this.scene, this.gravitator, this.ground, this.shadowGenerator, this.character.characterMesh.position, this.keyboardControl, function () {
+	                    if (snowman.snowmanMesh.position) {
+	                        this.snowmenSnowballs.push(new Snowball_1.default((snowball) => this.snowmenSnowballs = this.snowmenSnowballs.filter(i => i != snowball), this.scene, this.gravitator, this.shadowGenerator, snowman.snowmanMesh.position, this.character.characterMesh.position, Math.random() * 200));
+	                    }
+	                }.bind(this));
+	                this.snowmen.push(snowman);
 	            }
 	        }.bind(this));
 	        //Check if snowballs are hitting snowmen
 	        this.programTask = this.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
-	            this.snowmen.map(this.checkSnowmanHit);
+	            this.snowmen.map(this.checkSnowman);
+	            this.snowmenSnowballs.map(this.checkSnowballHitCharacter);
 	            this.snowmen.map(this.checkCharacterCollision);
 	        }.bind(this)));
 	    }
-	    checkSnowmanHit(snowman) {
-	        this.snowballs.map(i => this.checkSnowballHit(snowman, i.snowballMesh, i));
+	    checkSnowman(snowman) {
+	        this.characterSnowballs.map(i => this.checkSnowballHitSnowman(snowman, i.snowballMesh, i));
 	    }
-	    checkSnowballHit(snowman, snowballMesh, snowball) {
+	    checkSnowballHitSnowman(snowman, snowballMesh, snowball) {
 	        if (snowman.snowmanMesh && snowballMesh) {
 	            if (snowman.snowmanMesh.intersectsMesh(snowballMesh)) {
 	                if (snowman.hits.findIndex(i => i == snowball) < 0) {
@@ -26330,6 +26340,15 @@
 	                    this.timer = this.timer * .95;
 	                    this.reloadReact();
 	                }
+	            }
+	        }
+	    }
+	    checkSnowballHitCharacter(snowball) {
+	        if (snowball.snowballMesh && this.character.characterMesh) {
+	            if (snowball.snowballMesh.intersectsMesh(this.character.characterMesh)) {
+	                this.snowmenSnowballs = this.snowmenSnowballs.filter(i => i != snowball);
+	                this.character.characterHealth--;
+	                this.reloadReact();
 	            }
 	        }
 	    }
@@ -26409,7 +26428,7 @@
 	    constructor(scene, ground) {
 	        this.scene = scene;
 	        this.ground = ground;
-	        this.gravity = -9.81;
+	        this.gravity = -9.81 / 2;
 	        this.target = BABYLON.Vector3.Zero();
 	        this.removeBelowGround = this.removeBelowGround.bind(this);
 	    }
@@ -27351,19 +27370,19 @@
 	const BABYLON = __webpack_require__(237);
 	const ParticleSystem_1 = __webpack_require__(241);
 	class default_1 {
-	    constructor(dispose, scene, gravitator, shadowGenerator, characterPosition, targetPosition, vertical, additionalImpulse = BABYLON.Vector3.Zero()) {
+	    constructor(dispose, scene, gravitator, shadowGenerator, characterPosition, targetPosition, vertical, additionalImpulse = BABYLON.Vector3.Zero(), color = new BABYLON.Color3(1, 1, 1), trailColor1 = new BABYLON.Color4(1, 1, 1, 1), trailColor2 = new BABYLON.Color4(1, 1, 1, 1)) {
 	        let snowBall = BABYLON.Mesh.CreateSphere("Snowball", 6, 10, scene, true);
 	        this.snowballMesh = snowBall;
 	        shadowGenerator.getShadowMap().renderList.push(snowBall);
 	        let material = new BABYLON.StandardMaterial("texture1", scene);
-	        material.emissiveColor = new BABYLON.Color3(1, 1, 1);
+	        material.emissiveColor = color;
 	        snowBall.material = material;
 	        snowBall.position = new BABYLON.Vector3(characterPosition.x, characterPosition.y + 20, characterPosition.z);
 	        let particleSystem = ParticleSystem_1.default(scene, {
 	            capacity: 500,
 	            texture: new BABYLON.Texture("textures/flare.png", scene),
-	            color1: new BABYLON.Color4(1, 1, 1, 1),
-	            color2: new BABYLON.Color4(1, 1, 1, 1)
+	            color1: trailColor1,
+	            color2: trailColor2
 	        });
 	        particleSystem.disposeOnStop = true;
 	        particleSystem.emitter.position = snowBall.position;
@@ -27403,9 +27422,9 @@
 	"use strict";
 	const BABYLON = __webpack_require__(237);
 	class default_1 {
-	    constructor(dispose, scene, gravitator, ground, shadowGenerator, target, keyboardControl) {
+	    constructor(scene, gravitator, ground, shadowGenerator, target, keyboardControl, throwSnowball) {
 	        this.hits = [];
-	        let baseMovementSpeed = 15;
+	        let baseMovementSpeed = 5;
 	        let movementSpeed = baseMovementSpeed;
 	        let multiplier = 1;
 	        let yVector = new BABYLON.Vector2(0, 1);
@@ -27451,18 +27470,33 @@
 	                else {
 	                    if (gravitator.removeBelowGround(snowmanSphere, snowmanAction, 30, snowmanMesh)) {
 	                        gravitator.applyGravity(snowmanSphere, multiplier);
-	                        physicsBody.linearVelocity.scaleEqual(.7);
+	                        physicsBody.linearVelocity.scaleEqual(.9);
 	                    }
 	                    else {
-	                        dispose(this);
+	                        this.snowmanSphere.dispose();
+	                        this.snowmanMesh.dispose();
 	                    }
 	                }
 	            }.bind(this)));
 	            shadowGenerator.getShadowMap().renderList.push(snowmanMesh);
 	        }.bind(this));
+	        setTimeout(function () {
+	            this.infiniteLoop(() => {
+	                this.timer = 3000 + Math.random() * 1000;
+	                throwSnowball();
+	            });
+	        }.bind(this), 1000);
 	    }
 	    randomOperator() {
 	        return Math.round(Math.random() * 1) % 2 ? 1 : -1;
+	    }
+	    infiniteLoop(callback) {
+	        if (this.hits.length < 1) {
+	            callback();
+	            setTimeout(function () {
+	                this.infiniteLoop(callback);
+	            }.bind(this), this.timer);
+	        }
 	    }
 	}
 	Object.defineProperty(exports, "__esModule", { value: true });

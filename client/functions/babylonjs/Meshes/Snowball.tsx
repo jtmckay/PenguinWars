@@ -10,20 +10,23 @@ export default class {
     characterPosition: BABYLON.Vector3,
     targetPosition: BABYLON.Vector3,
     vertical: number,
-    additionalImpulse: BABYLON.Vector3 = BABYLON.Vector3.Zero()) {
+    additionalImpulse: BABYLON.Vector3 = BABYLON.Vector3.Zero(),
+    color: BABYLON.Color3 = new BABYLON.Color3(1, 1, 1),
+    trailColor1: BABYLON.Color4 = new BABYLON.Color4(1, 1, 1, 1),
+    trailColor2: BABYLON.Color4 = new BABYLON.Color4(1, 1, 1, 1)) {
     let snowBall = BABYLON.Mesh.CreateSphere("Snowball", 6, 10, scene, true);
     this.snowballMesh = snowBall;
     shadowGenerator.getShadowMap().renderList.push(snowBall);
     let material = new BABYLON.StandardMaterial("texture1", scene);
-    material.emissiveColor = new BABYLON.Color3(1, 1, 1);
+    material.emissiveColor = color;
     snowBall.material = material;
     snowBall.position = new BABYLON.Vector3(characterPosition.x, characterPosition.y + 20, characterPosition.z);
 
     let particleSystem = createParticleSystem(scene, {
       capacity: 500,
       texture: new BABYLON.Texture("textures/flare.png", scene),
-      color1: new BABYLON.Color4(1, 1, 1, 1),
-      color2: new BABYLON.Color4(1, 1, 1, 1) }
+      color1: trailColor1,
+      color2: trailColor2 }
     );
     particleSystem.disposeOnStop = true;
     particleSystem.emitter.position = snowBall.position;

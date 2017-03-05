@@ -2,18 +2,19 @@ import * as BABYLON from 'babylonjs';
 import Gravitator from '../Gravitator';
 import KeyboardControl from '../../../classes/KeyboardControl';
 import degreesToRadians from '../../degreesToRadians';
+import Snowball from './Snowball';
 
 export default class {
-  constructor(dispose: (Snowman: any) => void,
-    scene: BABYLON.Scene,
+  constructor(scene: BABYLON.Scene,
     gravitator: Gravitator,
     ground: BABYLON.Mesh,
     shadowGenerator: BABYLON.ShadowGenerator,
     target: BABYLON.Vector3,
-    keyboardControl: KeyboardControl
+    keyboardControl: KeyboardControl,
+    throwSnowball: () => void
   ) {
     this.hits = [];
-    let baseMovementSpeed = 15;
+    let baseMovementSpeed = 5;
     let movementSpeed = baseMovementSpeed;
     let multiplier = 1;
     let yVector = new BABYLON.Vector2(0, 1);
@@ -65,22 +66,39 @@ export default class {
         else {
           if (gravitator.removeBelowGround(snowmanSphere, snowmanAction, 30, snowmanMesh)) {
             gravitator.applyGravity(snowmanSphere, multiplier);
-            physicsBody.linearVelocity.scaleEqual(.7);
+            physicsBody.linearVelocity.scaleEqual(.9);
           }
           else {
-            dispose(this);
+            this.snowmanSphere.dispose();
+            this.snowmanMesh.dispose();
           }
         }
       }.bind(this)));
       shadowGenerator.getShadowMap().renderList.push(snowmanMesh);
     }.bind(this));
+    setTimeout(function() {
+      this.infiniteLoop(() => {
+        this.timer = 3000 + Math.random() * 1000;
+        throwSnowball();
+      });
+    }.bind(this), 1000);
   }
   hits: Array<any>;
+  timer: number;
   snowmanMesh: BABYLON.Mesh;
   snowmanSphere: BABYLON.Mesh;
   physicsBody: any;
 
   randomOperator() {
     return Math.round(Math.random() * 1) % 2 ? 1 : -1;
+  }
+
+  infiniteLoop(callback: () => void) {
+    if (this.hits.length < 1) {
+      callback();
+      setTimeout(function() {
+        this.infiniteLoop(callback);
+      }.bind(this), this.timer);
+    }
   }
 }

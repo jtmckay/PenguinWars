@@ -16,8 +16,9 @@ export default class {
   constructor(reloadReact: () => void) {
     this.reloadReact = reloadReact;
     this.program = this.program.bind(this);
-    this.checkSnowmanHit = this.checkSnowmanHit.bind(this);
-    this.checkSnowballHit = this.checkSnowballHit.bind(this);
+    this.checkSnowman = this.checkSnowman.bind(this);
+    this.checkSnowballHitSnowman = this.checkSnowballHitSnowman.bind(this);
+    this.checkSnowballHitCharacter = this.checkSnowballHitCharacter.bind(this);
     this.checkCharacterCollision = this.checkCharacterCollision.bind(this);
 
     let canvas = (document.getElementById("renderCanvas") as HTMLCanvasElement);
@@ -48,7 +49,7 @@ export default class {
         shadowGenerator.getShadowMap().resize(1);
       });
 
-      let ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/A1.jpg", 8000, 8000, 50, -300, 300, scene);
+      let ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/A1.jpg", 8000, 8000, 50, -200, 200, scene);
       this.ground = ground;
       ground.material = (function() {
         let material = new BABYLON.StandardMaterial("texture1", scene);
@@ -86,7 +87,8 @@ export default class {
       let character = new Character(scene, assetsManager, camera, gravitator, ground, shadowGenerator, keyboardControl);
       this.character = character;
       this.snowmen = [];
-      this.snowballs = [];
+      this.characterSnowballs = [];
+      this.snowmenSnowballs = [];
 
     /*
       BABYLON.SceneLoader.ImportMesh("penguin", "babylonjs/", "penguin.babylon", scene, function(newMeshes) {
@@ -140,14 +142,14 @@ export default class {
   mouseControl: MouseControl;
   programTask: BABYLON.Action;
   pointerParticleSystem: BABYLON.ParticleSystem;
-  snowballs: Array<Snowball>;
+  characterSnowballs: Array<Snowball>;
+  snowmenSnowballs: Array<Snowball>;
   snowmen: Array<Snowman>;
   killCount: number;
   timer: number;
   temporarySnowmanIgnoreList: Array<Snowman>;
 
   infiniteLoop(callback: () => void) {
-    console.log(this.timer);
     callback();
     setTimeout(function() {
       this.infiniteLoop(callback);
@@ -155,7 +157,11 @@ export default class {
   }
 
   program() {
-    this.timer = 3000;
+    this.timer = 5000;
+    let red3 = new BABYLON.Color3(1, 0, 0);
+    let red4 = new BABYLON.Color4(1, 0, 0, 1);
+    let white3 = new BABYLON.Color3(1, 1, 1);
+    let white4 = new BABYLON.Color4(1, 1, 1, 1);
     let mouseDownTime;
     let mouseUpTime;
     let timeDifference: number;
@@ -165,40 +171,52 @@ export default class {
     this.mouseControl.leftMouseUpAction = function(event) {
       mouseUpTime = new Date();
       timeDifference = (mouseUpTime - mouseDownTime)/2;
-      this.snowballs.push(new Snowball((snowball: Snowball) => this.snowballs = this.snowballs.filter(i => i != snowball),
+      this.characterSnowballs.push(new Snowball((snowball: Snowball) => this.characterSnowballs = this.characterSnowballs.filter(i => i != snowball),
         this.scene, this.gravitator, this.shadowGenerator,
         this.character.characterMesh.position,
         this.pointerParticleSystem.emitter.position,
-        timeDifference > 500 ? 500  : timeDifference,
-        this.character.physicsBody.linearVelocity
+        timeDifference/2 > 300 ? 300  : timeDifference/2,
+        this.character.physicsBody.linearVelocity,
+        red3, red4, red4
       ));
     }.bind(this);
 
     this.infiniteLoop(function() {
-      if (this.snowmen.length < 100) {
-        this.snowmen.push(new Snowman(function(snowman: Snowman) {
-        }.bind(this),
-        this.scene,
-        this.gravitator,
-        this.ground,
-        this.shadowGenerator,
-        this.character.characterMesh.position,
-        this.keyboardControl))
+      if (this.snowmen.length < 100 && this.character.characterHealth > 0) {
+        let snowman = new Snowman(this.scene,
+          this.gravitator,
+          this.ground,
+          this.shadowGenerator,
+          this.character.characterMesh.position,
+          this.keyboardControl,
+          function() {
+            if (snowman.snowmanMesh.position) {
+              this.snowmenSnowballs.push(new Snowball((snowball: Snowball) => this.snowmenSnowballs = this.snowmenSnowballs.filter(i => i!= snowball),
+                this.scene, this.gravitator, this.shadowGenerator,
+                snowman.snowmanMesh.position,
+                this.character.characterMesh.position,
+                Math.random() * 200,
+
+                ));
+            }
+          }.bind(this));
+        this.snowmen.push(snowman);
       }
     }.bind(this));
 
     //Check if snowballs are hitting snowmen
     this.programTask = this.scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
-      this.snowmen.map(this.checkSnowmanHit);
+      this.snowmen.map(this.checkSnowman);
+      this.snowmenSnowballs.map(this.checkSnowballHitCharacter)
       this.snowmen.map(this.checkCharacterCollision);
     }.bind(this)));
   }
 
-  checkSnowmanHit(snowman: Snowman) {
-    this.snowballs.map(i => this.checkSnowballHit(snowman, i.snowballMesh, i));
+  checkSnowman(snowman: Snowman) {
+    this.characterSnowballs.map(i => this.checkSnowballHitSnowman(snowman, i.snowballMesh, i));
   }
 
-  checkSnowballHit(snowman: Snowman, snowballMesh: BABYLON.Mesh, snowball: Snowball) {
+  checkSnowballHitSnowman(snowman: Snowman, snowballMesh: BABYLON.Mesh, snowball: Snowball) {
     if (snowman.snowmanMesh && snowballMesh) {
       if (snowman.snowmanMesh.intersectsMesh(snowballMesh)) {
         if (snowman.hits.findIndex(i => i == snowball) < 0) {
@@ -211,6 +229,16 @@ export default class {
           this.timer = this.timer*.95;
           this.reloadReact();
         }
+      }
+    }
+  }
+
+  checkSnowballHitCharacter(snowball: Snowball) {
+    if (snowball.snowballMesh && this.character.characterMesh) {
+      if (snowball.snowballMesh.intersectsMesh(this.character.characterMesh)) {
+        this.snowmenSnowballs = this.snowmenSnowballs.filter(i => i != snowball);
+        this.character.characterHealth--;
+        this.reloadReact();
       }
     }
   }

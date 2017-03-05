@@ -4,7 +4,7 @@ class Gravitator {
   constructor(scene: BABYLON.Scene, ground: BABYLON.Mesh) {
     this.scene = scene;
     this.ground = ground;
-    this.gravity = -9.81;
+    this.gravity = -9.81/2;
     this.target = BABYLON.Vector3.Zero();
 
     this.removeBelowGround = this.removeBelowGround.bind(this);
