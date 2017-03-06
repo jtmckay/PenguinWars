@@ -659,7 +659,7 @@
 
 /***/ },
 /* 6 */
-[246, 7],
+[252, 7],
 /* 7 */
 /***/ function(module, exports) {
 
@@ -6371,7 +6371,7 @@
 
 /***/ },
 /* 50 */
-[246, 35],
+[252, 35],
 /* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -26124,10 +26124,50 @@
 	"use strict";
 	const React = __webpack_require__(1);
 	const Canvas_1 = __webpack_require__(236);
+	const Label_1 = __webpack_require__(253);
 	class HomePage extends React.Component {
 	    constructor(props) {
 	        super(props);
+	        this.state = {
+	            showWelcome: true
+	        };
 	        this.canvas = new Canvas_1.default(() => this.setState({}));
+	    }
+	    renderWelcome() {
+	        return (React.createElement("div", { style: { textAlign: "center", position: "absolute", backgroundColor: "white", opacity: .8, width: "100%", height: "100%" } },
+	            React.createElement("div", { style: { width: 500, marginLeft: "auto", marginRight: "auto" } },
+	                React.createElement("div", { style: { width: 325, float: "left" } },
+	                    React.createElement(Label_1.default, { box: "Left Click", description: "Throw fire" }),
+	                    React.createElement(Label_1.default, { box: "Right Click (Hold)", description: "Look around" }),
+	                    React.createElement(Label_1.default, { box: "Double press movement key", description: "Dodge" }),
+	                    React.createElement(Label_1.default, { box: "Shift", description: "Slide (move faster)" }),
+	                    React.createElement(Label_1.default, { box: "Scroll Down", description: "Zoom out" }),
+	                    React.createElement(Label_1.default, { box: "Scroll Up", description: "Zoom in" })),
+	                React.createElement("div", { style: { width: 175, float: "left" } },
+	                    React.createElement(Label_1.default, { box: "W", description: "Move forward" }),
+	                    React.createElement(Label_1.default, { box: "A", description: "Strafe left" }),
+	                    React.createElement(Label_1.default, { box: "S", description: "Strafe right" }),
+	                    React.createElement(Label_1.default, { box: "D", description: "Move backward" })),
+	                React.createElement("div", { style: { position: "absolute", top: 350, width: 500 } },
+	                    React.createElement("a", { href: "#", onClick: event => {
+	                            event.preventDefault();
+	                            this.canvas.program();
+	                            this.setState({ showWelcome: false });
+	                        } }, "Let's Play!")))));
+	    }
+	    renderEndGame() {
+	        return (React.createElement("div", { style: { textAlign: "center", position: "absolute", backgroundColor: "white", opacity: .8, width: "100%", height: "100%" } },
+	            React.createElement("br", null),
+	            React.createElement("br", null),
+	            React.createElement("h1", null, "You're frozen!"),
+	            React.createElement("br", null),
+	            React.createElement("h2", null, "GG"),
+	            React.createElement("br", null),
+	            React.createElement("h2", null,
+	                this.canvas.killCount,
+	                " meltings"),
+	            React.createElement("br", null),
+	            React.createElement("a", { href: "#", onClick: () => location.reload() }, "Restart")));
 	    }
 	    render() {
 	        return (React.createElement("div", null,
@@ -26138,20 +26178,14 @@
 	                React.createElement("div", null,
 	                    "Lives: ",
 	                    this.canvas.character.characterHealth)),
+	            this.state.showWelcome
+	                ?
+	                    this.renderWelcome()
+	                :
+	                    null,
 	            this.canvas && this.canvas.character && this.canvas.character.characterHealth <= 0
 	                ?
-	                    React.createElement("div", { style: { textAlign: "center", position: "absolute", backgroundColor: "white", opacity: .8, width: "100%", height: "100%" } },
-	                        React.createElement("br", null),
-	                        React.createElement("br", null),
-	                        React.createElement("h1", null, "You're frozen!"),
-	                        React.createElement("br", null),
-	                        React.createElement("h2", null, "GG"),
-	                        React.createElement("br", null),
-	                        React.createElement("h2", null,
-	                            this.canvas.killCount,
-	                            " meltings"),
-	                        React.createElement("br", null),
-	                        React.createElement("a", { href: "#", onClick: () => location.reload() }, "Restart"))
+	                    this.renderEndGame()
 	                :
 	                    null));
 	    }
@@ -26173,9 +26207,9 @@
 	const Walls_1 = __webpack_require__(242);
 	const Light_1 = __webpack_require__(244);
 	const MouseControl_1 = __webpack_require__(245);
-	const KeyboardControl_1 = __webpack_require__(247);
-	const Character_1 = __webpack_require__(249);
-	const Snowman_1 = __webpack_require__(251);
+	const KeyboardControl_1 = __webpack_require__(246);
+	const Character_1 = __webpack_require__(247);
+	const Snowman_1 = __webpack_require__(249);
 	const Snowball_1 = __webpack_require__(250);
 	class default_1 {
 	    constructor(reloadReact) {
@@ -26212,6 +26246,7 @@
 	            ground.material = (function () {
 	                let material = new BABYLON.StandardMaterial("texture1", scene);
 	                material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
+	                material.wireframe = true;
 	                return material;
 	            })();
 	            ground.checkCollisions = true;
@@ -26268,7 +26303,6 @@
 	                assetsLoaded = true;
 	                console.log("Finish");
 	                assetsManager.reset();
-	                this.program();
 	                engine.hideLoadingUI();
 	                engine.runRenderLoop(function () {
 	                    scene.render();
@@ -26332,12 +26366,13 @@
 	            if (snowman.snowmanMesh.intersectsMesh(snowballMesh)) {
 	                if (snowman.hits.findIndex(i => i == snowball) < 0) {
 	                    snowman.hits.push(snowball);
+	                    snowball.boom();
 	                    this.snowmen = this.snowmen.filter(i => i != snowman);
 	                    this.killCount++;
 	                    if (this.killCount % 25 == 0) {
 	                        this.character.characterHealth++;
 	                    }
-	                    this.timer = this.timer * .95;
+	                    this.timer = this.timer * .98;
 	                    this.reloadReact();
 	                }
 	            }
@@ -26346,6 +26381,7 @@
 	    checkSnowballHitCharacter(snowball) {
 	        if (snowball.snowballMesh && this.character.characterMesh) {
 	            if (snowball.snowballMesh.intersectsMesh(this.character.characterMesh)) {
+	                snowball.boom();
 	                this.snowmenSnowballs = this.snowmenSnowballs.filter(i => i != snowball);
 	                this.character.characterHealth--;
 	                this.reloadReact();
@@ -26905,123 +26941,6 @@
 
 /***/ },
 /* 246 */
-/***/ function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
-
-	/* WEBPACK VAR INJECTION */(function(process) {/**
-	 * Copyright 2013-present, Facebook, Inc.
-	 * All rights reserved.
-	 *
-	 * This source code is licensed under the BSD-style license found in the
-	 * LICENSE file in the root directory of this source tree. An additional grant
-	 * of patent rights can be found in the PATENTS file in the same directory.
-	 *
-	 * 
-	 */
-	
-	'use strict';
-	
-	var _prodInvariant = __webpack_require__(__webpack_module_template_argument_0__);
-	
-	var invariant = __webpack_require__(8);
-	
-	/**
-	 * Static poolers. Several custom versions for each potential number of
-	 * arguments. A completely generic pooler is easy to implement, but would
-	 * require accessing the `arguments` object. In each of these, `this` refers to
-	 * the Class itself, not an instance. If any others are needed, simply add them
-	 * here, or in their own files.
-	 */
-	var oneArgumentPooler = function (copyFieldsFrom) {
-	  var Klass = this;
-	  if (Klass.instancePool.length) {
-	    var instance = Klass.instancePool.pop();
-	    Klass.call(instance, copyFieldsFrom);
-	    return instance;
-	  } else {
-	    return new Klass(copyFieldsFrom);
-	  }
-	};
-	
-	var twoArgumentPooler = function (a1, a2) {
-	  var Klass = this;
-	  if (Klass.instancePool.length) {
-	    var instance = Klass.instancePool.pop();
-	    Klass.call(instance, a1, a2);
-	    return instance;
-	  } else {
-	    return new Klass(a1, a2);
-	  }
-	};
-	
-	var threeArgumentPooler = function (a1, a2, a3) {
-	  var Klass = this;
-	  if (Klass.instancePool.length) {
-	    var instance = Klass.instancePool.pop();
-	    Klass.call(instance, a1, a2, a3);
-	    return instance;
-	  } else {
-	    return new Klass(a1, a2, a3);
-	  }
-	};
-	
-	var fourArgumentPooler = function (a1, a2, a3, a4) {
-	  var Klass = this;
-	  if (Klass.instancePool.length) {
-	    var instance = Klass.instancePool.pop();
-	    Klass.call(instance, a1, a2, a3, a4);
-	    return instance;
-	  } else {
-	    return new Klass(a1, a2, a3, a4);
-	  }
-	};
-	
-	var standardReleaser = function (instance) {
-	  var Klass = this;
-	  !(instance instanceof Klass) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Trying to release an instance into a pool of a different type.') : _prodInvariant('25') : void 0;
-	  instance.destructor();
-	  if (Klass.instancePool.length < Klass.poolSize) {
-	    Klass.instancePool.push(instance);
-	  }
-	};
-	
-	var DEFAULT_POOL_SIZE = 10;
-	var DEFAULT_POOLER = oneArgumentPooler;
-	
-	/**
-	 * Augments `CopyConstructor` to be a poolable class, augmenting only the class
-	 * itself (statically) not adding any prototypical fields. Any CopyConstructor
-	 * you give this may have a `poolSize` property, and will look for a
-	 * prototypical `destructor` on instances.
-	 *
-	 * @param {Function} CopyConstructor Constructor that can be used to reset.
-	 * @param {Function} pooler Customizable pooler.
-	 */
-	var addPoolingTo = function (CopyConstructor, pooler) {
-	  // Casting as any so that flow ignores the actual implementation and trusts
-	  // it to match the type we declared
-	  var NewKlass = CopyConstructor;
-	  NewKlass.instancePool = [];
-	  NewKlass.getPooled = pooler || DEFAULT_POOLER;
-	  if (!NewKlass.poolSize) {
-	    NewKlass.poolSize = DEFAULT_POOL_SIZE;
-	  }
-	  NewKlass.release = standardReleaser;
-	  return NewKlass;
-	};
-	
-	var PooledClass = {
-	  addPoolingTo: addPoolingTo,
-	  oneArgumentPooler: oneArgumentPooler,
-	  twoArgumentPooler: twoArgumentPooler,
-	  threeArgumentPooler: threeArgumentPooler,
-	  fourArgumentPooler: fourArgumentPooler
-	};
-	
-	module.exports = PooledClass;
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
-
-/***/ },
-/* 247 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -27136,19 +27055,7 @@
 
 
 /***/ },
-/* 248 */
-/***/ function(module, exports) {
-
-	"use strict";
-	function default_1(degrees) {
-	    return degrees * Math.PI / 180;
-	}
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = default_1;
-
-
-/***/ },
-/* 249 */
+/* 247 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -27363,60 +27270,19 @@
 
 
 /***/ },
-/* 250 */
-/***/ function(module, exports, __webpack_require__) {
+/* 248 */
+/***/ function(module, exports) {
 
 	"use strict";
-	const BABYLON = __webpack_require__(237);
-	const ParticleSystem_1 = __webpack_require__(241);
-	class default_1 {
-	    constructor(dispose, scene, gravitator, shadowGenerator, characterPosition, targetPosition, vertical, additionalImpulse = BABYLON.Vector3.Zero(), color = new BABYLON.Color3(1, 1, 1), trailColor1 = new BABYLON.Color4(1, 1, 1, 1), trailColor2 = new BABYLON.Color4(1, 1, 1, 1)) {
-	        let snowBall = BABYLON.Mesh.CreateSphere("Snowball", 6, 10, scene, true);
-	        this.snowballMesh = snowBall;
-	        shadowGenerator.getShadowMap().renderList.push(snowBall);
-	        let material = new BABYLON.StandardMaterial("texture1", scene);
-	        material.emissiveColor = color;
-	        snowBall.material = material;
-	        snowBall.position = new BABYLON.Vector3(characterPosition.x, characterPosition.y + 20, characterPosition.z);
-	        let particleSystem = ParticleSystem_1.default(scene, {
-	            capacity: 500,
-	            texture: new BABYLON.Texture("textures/flare.png", scene),
-	            color1: trailColor1,
-	            color2: trailColor2
-	        });
-	        particleSystem.disposeOnStop = true;
-	        particleSystem.emitter.position = snowBall.position;
-	        let physicalSnowBall = snowBall.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 1000 });
-	        let x = targetPosition.x - snowBall.position.x;
-	        let y = targetPosition.y - snowBall.position.y;
-	        let z = targetPosition.z - snowBall.position.z;
-	        let vector1 = new BABYLON.Vector2(0, 1);
-	        //Target position relative to the character
-	        let vector2 = new BABYLON.Vector2(x, z);
-	        let angle = BABYLON.Angle.BetweenTwoPoints(vector1, vector2);
-	        let distance = Math.sqrt(x * x + z * z);
-	        let vector3 = new BABYLON.Vector2(distance, y);
-	        let verticalAngle = BABYLON.Angle.BetweenTwoPoints(vector1, vector3);
-	        let sceneAnimationRatio = scene.getAnimationRatio();
-	        let power = 1000 * sceneAnimationRatio;
-	        snowBall.applyImpulse(new BABYLON.Vector3(power * Math.cos(angle.radians()) + additionalImpulse.x, vertical + additionalImpulse.y, power * Math.sin(angle.radians()) + additionalImpulse.z), snowBall.position);
-	        let action = scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
-	            if (gravitator.removeBelowGround(snowBall, action)) {
-	                gravitator.applyGravity(snowBall, scene.getAnimationRatio());
-	            }
-	            else {
-	                particleSystem.stop();
-	                dispose(this);
-	            }
-	        }.bind(this)));
-	    }
+	function default_1(degrees) {
+	    return degrees * Math.PI / 180;
 	}
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = default_1;
 
 
 /***/ },
-/* 251 */
+/* 249 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -27501,6 +27367,223 @@
 	}
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = default_1;
+
+
+/***/ },
+/* 250 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const BABYLON = __webpack_require__(237);
+	const ParticleSystem_1 = __webpack_require__(241);
+	class default_1 {
+	    constructor(dispose, scene, gravitator, shadowGenerator, characterPosition, targetPosition, vertical, additionalImpulse = BABYLON.Vector3.Zero(), color = new BABYLON.Color3(1, 1, 1), trailColor1 = new BABYLON.Color4(1, 1, 1, 1), trailColor2 = new BABYLON.Color4(1, 1, 1, 1)) {
+	        this.scene = scene;
+	        this.trailColor1 = trailColor1;
+	        this.trailColor2 = trailColor2;
+	        let snowBall = BABYLON.Mesh.CreateSphere("Snowball", 6, 10, scene, true);
+	        this.snowballMesh = snowBall;
+	        shadowGenerator.getShadowMap().renderList.push(snowBall);
+	        let material = new BABYLON.StandardMaterial("texture1", scene);
+	        material.emissiveColor = color;
+	        snowBall.material = material;
+	        snowBall.position = new BABYLON.Vector3(characterPosition.x, characterPosition.y + 20, characterPosition.z);
+	        let particleSystem = ParticleSystem_1.default(scene, {
+	            capacity: 500,
+	            texture: new BABYLON.Texture("textures/flare.png", scene),
+	            color1: trailColor1,
+	            color2: trailColor2
+	        });
+	        particleSystem.disposeOnStop = true;
+	        particleSystem.emitter.position = snowBall.position;
+	        let physicalSnowBall = snowBall.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 1000 });
+	        let x = targetPosition.x - snowBall.position.x;
+	        let y = targetPosition.y - snowBall.position.y;
+	        let z = targetPosition.z - snowBall.position.z;
+	        let vector1 = new BABYLON.Vector2(0, 1);
+	        //Target position relative to the character
+	        let vector2 = new BABYLON.Vector2(x, z);
+	        let angle = BABYLON.Angle.BetweenTwoPoints(vector1, vector2);
+	        let distance = Math.sqrt(x * x + z * z);
+	        let vector3 = new BABYLON.Vector2(distance, y);
+	        let verticalAngle = BABYLON.Angle.BetweenTwoPoints(vector1, vector3);
+	        let sceneAnimationRatio = scene.getAnimationRatio();
+	        let power = 1000 * sceneAnimationRatio;
+	        snowBall.applyImpulse(new BABYLON.Vector3(power * Math.cos(angle.radians()) + additionalImpulse.x, vertical + additionalImpulse.y, power * Math.sin(angle.radians()) + additionalImpulse.z), snowBall.position);
+	        let action = scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
+	            if (gravitator.removeBelowGround(snowBall, action)) {
+	                gravitator.applyGravity(snowBall, scene.getAnimationRatio());
+	            }
+	            else {
+	                particleSystem.stop();
+	                dispose(this);
+	            }
+	        }.bind(this)));
+	    }
+	    boom() {
+	        let particleSystem = ParticleSystem_1.default(this.scene, {
+	            capacity: 1000,
+	            texture: new BABYLON.Texture("textures/flare.png", this.scene),
+	            color1: this.trailColor1,
+	            color2: this.trailColor2
+	        });
+	        particleSystem.disposeOnStop = true;
+	        particleSystem.emitter.position = this.snowballMesh.position;
+	        particleSystem.emitRate = 10000;
+	        particleSystem.direction1 = new BABYLON.Vector3(0, 0, 0);
+	        particleSystem.direction2 = new BABYLON.Vector3(1, 1, 1);
+	        particleSystem.minEmitPower = 200;
+	        particleSystem.maxEmitPower = 500;
+	        particleSystem.minLifeTime = 1;
+	        particleSystem.maxLifeTime = 3;
+	        setTimeout(function () {
+	            particleSystem.stop();
+	        }, 200);
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = default_1;
+
+
+/***/ },
+/* 251 */,
+/* 252 */
+/***/ function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {/**
+	 * Copyright 2013-present, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 *
+	 * 
+	 */
+	
+	'use strict';
+	
+	var _prodInvariant = __webpack_require__(__webpack_module_template_argument_0__);
+	
+	var invariant = __webpack_require__(8);
+	
+	/**
+	 * Static poolers. Several custom versions for each potential number of
+	 * arguments. A completely generic pooler is easy to implement, but would
+	 * require accessing the `arguments` object. In each of these, `this` refers to
+	 * the Class itself, not an instance. If any others are needed, simply add them
+	 * here, or in their own files.
+	 */
+	var oneArgumentPooler = function (copyFieldsFrom) {
+	  var Klass = this;
+	  if (Klass.instancePool.length) {
+	    var instance = Klass.instancePool.pop();
+	    Klass.call(instance, copyFieldsFrom);
+	    return instance;
+	  } else {
+	    return new Klass(copyFieldsFrom);
+	  }
+	};
+	
+	var twoArgumentPooler = function (a1, a2) {
+	  var Klass = this;
+	  if (Klass.instancePool.length) {
+	    var instance = Klass.instancePool.pop();
+	    Klass.call(instance, a1, a2);
+	    return instance;
+	  } else {
+	    return new Klass(a1, a2);
+	  }
+	};
+	
+	var threeArgumentPooler = function (a1, a2, a3) {
+	  var Klass = this;
+	  if (Klass.instancePool.length) {
+	    var instance = Klass.instancePool.pop();
+	    Klass.call(instance, a1, a2, a3);
+	    return instance;
+	  } else {
+	    return new Klass(a1, a2, a3);
+	  }
+	};
+	
+	var fourArgumentPooler = function (a1, a2, a3, a4) {
+	  var Klass = this;
+	  if (Klass.instancePool.length) {
+	    var instance = Klass.instancePool.pop();
+	    Klass.call(instance, a1, a2, a3, a4);
+	    return instance;
+	  } else {
+	    return new Klass(a1, a2, a3, a4);
+	  }
+	};
+	
+	var standardReleaser = function (instance) {
+	  var Klass = this;
+	  !(instance instanceof Klass) ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Trying to release an instance into a pool of a different type.') : _prodInvariant('25') : void 0;
+	  instance.destructor();
+	  if (Klass.instancePool.length < Klass.poolSize) {
+	    Klass.instancePool.push(instance);
+	  }
+	};
+	
+	var DEFAULT_POOL_SIZE = 10;
+	var DEFAULT_POOLER = oneArgumentPooler;
+	
+	/**
+	 * Augments `CopyConstructor` to be a poolable class, augmenting only the class
+	 * itself (statically) not adding any prototypical fields. Any CopyConstructor
+	 * you give this may have a `poolSize` property, and will look for a
+	 * prototypical `destructor` on instances.
+	 *
+	 * @param {Function} CopyConstructor Constructor that can be used to reset.
+	 * @param {Function} pooler Customizable pooler.
+	 */
+	var addPoolingTo = function (CopyConstructor, pooler) {
+	  // Casting as any so that flow ignores the actual implementation and trusts
+	  // it to match the type we declared
+	  var NewKlass = CopyConstructor;
+	  NewKlass.instancePool = [];
+	  NewKlass.getPooled = pooler || DEFAULT_POOLER;
+	  if (!NewKlass.poolSize) {
+	    NewKlass.poolSize = DEFAULT_POOL_SIZE;
+	  }
+	  NewKlass.release = standardReleaser;
+	  return NewKlass;
+	};
+	
+	var PooledClass = {
+	  addPoolingTo: addPoolingTo,
+	  oneArgumentPooler: oneArgumentPooler,
+	  twoArgumentPooler: twoArgumentPooler,
+	  threeArgumentPooler: threeArgumentPooler,
+	  fourArgumentPooler: fourArgumentPooler
+	};
+	
+	module.exports = PooledClass;
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
+
+/***/ },
+/* 253 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const React = __webpack_require__(1);
+	class Label extends React.Component {
+	    constructor(props) {
+	        super(props);
+	    }
+	    render() {
+	        return (React.createElement("div", { style: { width: "100%", height: 50 } },
+	            React.createElement("div", { style: { height: 20, margin: 10, borderStyle: "solid", float: "left" } },
+	                "\u00A0",
+	                this.props.box,
+	                "\u00A0"),
+	            React.createElement("div", { style: { float: "left", marginTop: 12 } }, this.props.description)));
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Label;
 
 
 /***/ }

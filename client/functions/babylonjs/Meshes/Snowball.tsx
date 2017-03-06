@@ -14,6 +14,9 @@ export default class {
     color: BABYLON.Color3 = new BABYLON.Color3(1, 1, 1),
     trailColor1: BABYLON.Color4 = new BABYLON.Color4(1, 1, 1, 1),
     trailColor2: BABYLON.Color4 = new BABYLON.Color4(1, 1, 1, 1)) {
+    this.scene = scene;
+    this.trailColor1 = trailColor1;
+    this.trailColor2 = trailColor2;
     let snowBall = BABYLON.Mesh.CreateSphere("Snowball", 6, 10, scene, true);
     this.snowballMesh = snowBall;
     shadowGenerator.getShadowMap().renderList.push(snowBall);
@@ -62,5 +65,29 @@ export default class {
       }
     }.bind(this)));
   }
+  scene: BABYLON.Scene;
   snowballMesh: BABYLON.Mesh;
+  trailColor1: BABYLON.Color4;
+  trailColor2: BABYLON.Color4;
+
+  boom() {
+    let particleSystem = createParticleSystem(this.scene, {
+      capacity: 1000,
+      texture: new BABYLON.Texture("textures/flare.png", this.scene),
+      color1: this.trailColor1,
+      color2: this.trailColor2 }
+    );
+    particleSystem.disposeOnStop = true;
+    particleSystem.emitter.position = this.snowballMesh.position;
+    particleSystem.emitRate = 10000;
+    particleSystem.direction1 = new BABYLON.Vector3(0, 0, 0);
+    particleSystem.direction2 = new BABYLON.Vector3(1, 1, 1);
+    particleSystem.minEmitPower = 200;
+    particleSystem.maxEmitPower = 500;
+    particleSystem.minLifeTime = 1;
+    particleSystem.maxLifeTime = 3;
+    setTimeout(function() {
+      particleSystem.stop();
+    }, 200);
+  }
 }

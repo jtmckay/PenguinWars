@@ -54,6 +54,7 @@ export default class {
       ground.material = (function() {
         let material = new BABYLON.StandardMaterial("texture1", scene);
         material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
+        material.wireframe = true;
         return material;
       })();
       ground.checkCollisions = true;
@@ -114,7 +115,6 @@ export default class {
         assetsLoaded = true;
         console.log("Finish");
         assetsManager.reset();
-        this.program();
         engine.hideLoadingUI();
         engine.runRenderLoop(function () {
           scene.render();
@@ -221,12 +221,13 @@ export default class {
       if (snowman.snowmanMesh.intersectsMesh(snowballMesh)) {
         if (snowman.hits.findIndex(i => i == snowball) < 0) {
           snowman.hits.push(snowball);
+          snowball.boom();
           this.snowmen = this.snowmen.filter(i => i != snowman);
           this.killCount++;
           if (this.killCount%25==0) {
             this.character.characterHealth++;
           }
-          this.timer = this.timer*.95;
+          this.timer = this.timer*.98;
           this.reloadReact();
         }
       }
@@ -236,6 +237,7 @@ export default class {
   checkSnowballHitCharacter(snowball: Snowball) {
     if (snowball.snowballMesh && this.character.characterMesh) {
       if (snowball.snowballMesh.intersectsMesh(this.character.characterMesh)) {
+        snowball.boom();
         this.snowmenSnowballs = this.snowmenSnowballs.filter(i => i != snowball);
         this.character.characterHealth--;
         this.reloadReact();
