@@ -1,0 +1,22 @@
+	Exporter version: 4.6.1, Blender version: 2.78 (sub 0)
+========= Conversion from Blender to Babylon.js =========
+	Scene settings used:
+		selected layers only:  false
+		flat shading entire scene:  false
+		inline textures:  false
+		texture directory:  D:\GitHub\PenguinWars\public\babylonjs\
+	Python World class constructor completed
+	WARNING: No active camera has been assigned, or is not in a currently selected Blender layer
+	processing begun of mesh:  snowman
+		processing begun of baked material:  snowman
+			Internal baking texture, type: TEXTURE, mapped using: UVMap
+		num positions      :  4490
+		num normals        :  4490
+		num uvs            :  8980
+		num uvs2           :  0
+		num colors         :  0
+		num indices        :  11988
+========= Writing of scene file started =========
+========= Writing of scene file completed =========
+========= end of processing =========
+elapsed time:  0 min, 4.048 secs
