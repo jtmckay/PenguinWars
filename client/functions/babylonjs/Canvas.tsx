@@ -15,7 +15,9 @@ import Snowball from './Meshes/Snowball';
 export default class {
   constructor(reloadReact: () => void) {
     this.reloadReact = reloadReact;
-    this.program = this.program.bind(this);
+    this.runProgram = this.runProgram.bind(this);
+    this.stopProgram = this.stopProgram.bind(this);
+    this.resetProgram = this.resetProgram.bind(this);
     this.checkSnowman = this.checkSnowman.bind(this);
     this.checkSnowballHitSnowman = this.checkSnowballHitSnowman.bind(this);
     this.checkSnowballHitCharacter = this.checkSnowballHitCharacter.bind(this);
@@ -53,13 +55,19 @@ export default class {
       this.ground = ground;
       ground.material = (function() {
         let material = new BABYLON.StandardMaterial("texture1", scene);
-        material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
+        material.diffuseColor = new BABYLON.Color3(.2, .6, .2);
         material.wireframe = true;
         return material;
       })();
       ground.checkCollisions = true;
       ground.setPhysicsState(BABYLON.PhysicsEngine.MeshImpostor, {mass: 0});
-      ground.receiveShadows = true;
+      let groundCover = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/A1.jpg", 8000, 8000, 50, -200, 200, scene);
+      groundCover.material = (function() {
+        let material = new BABYLON.StandardMaterial("texture1", scene);
+        material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
+        return material;
+      })();
+      groundCover.receiveShadows = true;
 
       let walls = createWalls(scene);
       let gravitator = new Gravitator(scene, ground);
@@ -132,6 +140,8 @@ export default class {
     this.temporarySnowmanIgnoreList = [];
   }
   reloadReact: () => void;
+  running: boolean;
+  canRestart: boolean;
   scene: BABYLON.Scene;
   assetsManager: BABYLON.AssetsManager;
   gravitator: Gravitator;
@@ -149,15 +159,20 @@ export default class {
   timer: number;
   temporarySnowmanIgnoreList: Array<Snowman>;
 
-  infiniteLoop(callback: () => void) {
-    callback();
-    setTimeout(function() {
-      this.infiniteLoop(callback);
-    }.bind(this), this.timer);
+  programLoop(callback: () => void) {
+    if (this.running) {
+      callback();
+      setTimeout(function() {
+        this.programLoop(callback);
+      }.bind(this), this.timer);
+    }
   }
 
-  program() {
+  runProgram() {
+    this.running = true;
     this.timer = 5000;
+    let blue3 = new BABYLON.Color3(0, 0, 1);
+    let blue4 = new BABYLON.Color4(0, 0, 1, 1);
     let red3 = new BABYLON.Color3(1, 0, 0);
     let red4 = new BABYLON.Color4(1, 0, 0, 1);
     let white3 = new BABYLON.Color3(1, 1, 1);
@@ -177,12 +192,12 @@ export default class {
         this.pointerParticleSystem.emitter.position,
         timeDifference/2 > 300 ? 300  : timeDifference/2,
         this.character.physicsBody.linearVelocity,
-        red3, red4, red4
+        blue3, blue4, blue4
       ));
     }.bind(this);
 
-    this.infiniteLoop(function() {
-      if (this.snowmen.length < 100 && this.character.characterHealth > 0) {
+    this.programLoop(function() {
+      if (this.snowmen.length < 100) {
         let snowman = new Snowman(this.scene,
           this.gravitator,
           this.ground,
@@ -195,12 +210,13 @@ export default class {
                 this.scene, this.gravitator, this.shadowGenerator,
                 snowman.snowmanMesh.position,
                 this.character.characterMesh.position,
-                Math.random() * 200,
-
+                Math.random() * 200
                 ));
             }
           }.bind(this));
-        this.snowmen.push(snowman);
+        setTimeout(function() {
+          this.snowmen.push(snowman);
+        }.bind(this), 1000);
       }
     }.bind(this));
 
@@ -210,6 +226,25 @@ export default class {
       this.snowmenSnowballs.map(this.checkSnowballHitCharacter)
       this.snowmen.map(this.checkCharacterCollision);
     }.bind(this)));
+  }
+
+  stopProgram() {
+    this.running = false;
+    setTimeout(function() {
+      this.canRestart = true;
+      this.reloadReact();
+    }.bind(this), this.timer);
+    this.scene.actionManager.actions = this.scene.actionManager.actions.filter(i => i != this.programTask);
+  }
+
+  resetProgram() {
+    let sudoSnowBall = {};
+    this.snowmen.map(i => i.hits.push(sudoSnowBall));
+    this.snowmen = [];
+    this.killCount = 0;
+    this.character.characterHealth = 3;
+    this.runProgram();
+    this.reloadReact();
   }
 
   checkSnowman(snowman: Snowman) {
@@ -251,7 +286,7 @@ export default class {
         if (this.temporarySnowmanIgnoreList.findIndex(i => i == snowman) < 0) {
           this.character.characterHealth--;
           if (this.character.characterHealth <= 0) {
-            this.scene.actionManager.actions = this.scene.actionManager.actions.filter(i => i != this.programTask);
+            this.stopProgram();
           }
           this.reloadReact();
           this.temporarySnowmanIgnoreList.push(snowman);

@@ -38,8 +38,8 @@ export default class {
       snowmanSphere.position.y = 400;
       snowmanSphere.position.x = target.x + (Math.random() * 1000 + 1000) * this.randomOperator();
       snowmanSphere.position.z = target.z + (Math.random() * 1000 + 1000) * this.randomOperator();
-      snowmanSphere.position.x = snowmanSphere.position.x > 3000 ? 3000 : snowmanSphere.position.x < -3000 ? -3000 : snowmanSphere.position.x;
-      snowmanSphere.position.z = snowmanSphere.position.z > 3000 ? 3000 : snowmanSphere.position.z < -3000 ? -3000 : snowmanSphere.position.z;
+      snowmanSphere.position.x = snowmanSphere.position.x > 2950 ? 2950 : snowmanSphere.position.x < -2950 ? -2950 : snowmanSphere.position.x;
+      snowmanSphere.position.z = snowmanSphere.position.z > 2950 ? 2950 : snowmanSphere.position.z < -2950 ? -2950 : snowmanSphere.position.z;
 
       snowmanAction = scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
         multiplier = scene.getAnimationRatio();

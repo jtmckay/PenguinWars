@@ -27,8 +27,9 @@ class HomePage extends React.Component<{}, State> {
           <div style={{width: 325, float: "left"}}>
             <Label box="Left Click" description="Throw fire" />
             <Label box="Right Click (Hold)" description="Look around" />
-            <Label box="Double press movement key" description="Dodge" />
+            <Label box="Space" description="Jump" />
             <Label box="Shift" description="Slide (move faster)" />
+            <Label box="Double press movement key" description="Dodge" />
             <Label box="Scroll Down" description="Zoom out" />
             <Label box="Scroll Up" description="Zoom in" />
           </div>
@@ -41,7 +42,7 @@ class HomePage extends React.Component<{}, State> {
           <div style={{position: "absolute", top: 350, width: 500}} >
             <a href="#" onClick={event => {
               event.preventDefault();
-              this.canvas.program();
+              this.canvas.runProgram();
               this.setState({showWelcome: false});
             }}>Let's Play!</a>
           </div>
@@ -61,7 +62,15 @@ class HomePage extends React.Component<{}, State> {
         <br />
         <h2>{this.canvas.killCount} meltings</h2>
         <br />
-        <a href="#" onClick={() => location.reload()}>Restart</a>
+        {this.canvas.canRestart
+          ?
+          <a href="#" onClick={event => {
+            event.preventDefault();
+            this.canvas.resetProgram();
+          }}>Restart</a>
+          :
+          <a>Game Ending...</a>
+        }
       </div>
     );
   }

@@ -26124,7 +26124,7 @@
 	"use strict";
 	const React = __webpack_require__(1);
 	const Canvas_1 = __webpack_require__(236);
-	const Label_1 = __webpack_require__(253);
+	const Label_1 = __webpack_require__(251);
 	class HomePage extends React.Component {
 	    constructor(props) {
 	        super(props);
@@ -26139,8 +26139,9 @@
 	                React.createElement("div", { style: { width: 325, float: "left" } },
 	                    React.createElement(Label_1.default, { box: "Left Click", description: "Throw fire" }),
 	                    React.createElement(Label_1.default, { box: "Right Click (Hold)", description: "Look around" }),
-	                    React.createElement(Label_1.default, { box: "Double press movement key", description: "Dodge" }),
+	                    React.createElement(Label_1.default, { box: "Space", description: "Jump" }),
 	                    React.createElement(Label_1.default, { box: "Shift", description: "Slide (move faster)" }),
+	                    React.createElement(Label_1.default, { box: "Double press movement key", description: "Dodge" }),
 	                    React.createElement(Label_1.default, { box: "Scroll Down", description: "Zoom out" }),
 	                    React.createElement(Label_1.default, { box: "Scroll Up", description: "Zoom in" })),
 	                React.createElement("div", { style: { width: 175, float: "left" } },
@@ -26151,7 +26152,7 @@
 	                React.createElement("div", { style: { position: "absolute", top: 350, width: 500 } },
 	                    React.createElement("a", { href: "#", onClick: event => {
 	                            event.preventDefault();
-	                            this.canvas.program();
+	                            this.canvas.runProgram();
 	                            this.setState({ showWelcome: false });
 	                        } }, "Let's Play!")))));
 	    }
@@ -26167,7 +26168,14 @@
 	                this.canvas.killCount,
 	                " meltings"),
 	            React.createElement("br", null),
-	            React.createElement("a", { href: "#", onClick: () => location.reload() }, "Restart")));
+	            this.canvas.canRestart
+	                ?
+	                    React.createElement("a", { href: "#", onClick: event => {
+	                            event.preventDefault();
+	                            this.canvas.resetProgram();
+	                        } }, "Restart")
+	                :
+	                    React.createElement("a", null, "Game Ending...")));
 	    }
 	    render() {
 	        return (React.createElement("div", null,
@@ -26214,7 +26222,9 @@
 	class default_1 {
 	    constructor(reloadReact) {
 	        this.reloadReact = reloadReact;
-	        this.program = this.program.bind(this);
+	        this.runProgram = this.runProgram.bind(this);
+	        this.stopProgram = this.stopProgram.bind(this);
+	        this.resetProgram = this.resetProgram.bind(this);
 	        this.checkSnowman = this.checkSnowman.bind(this);
 	        this.checkSnowballHitSnowman = this.checkSnowballHitSnowman.bind(this);
 	        this.checkSnowballHitCharacter = this.checkSnowballHitCharacter.bind(this);
@@ -26245,13 +26255,19 @@
 	            this.ground = ground;
 	            ground.material = (function () {
 	                let material = new BABYLON.StandardMaterial("texture1", scene);
-	                material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
+	                material.diffuseColor = new BABYLON.Color3(.2, .6, .2);
 	                material.wireframe = true;
 	                return material;
 	            })();
 	            ground.checkCollisions = true;
 	            ground.setPhysicsState(BABYLON.PhysicsEngine.MeshImpostor, { mass: 0 });
-	            ground.receiveShadows = true;
+	            let groundCover = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "textures/A1.jpg", 8000, 8000, 50, -200, 200, scene);
+	            groundCover.material = (function () {
+	                let material = new BABYLON.StandardMaterial("texture1", scene);
+	                material.diffuseColor = new BABYLON.Color3(.3, .7, .3);
+	                return material;
+	            })();
+	            groundCover.receiveShadows = true;
 	            let walls = Walls_1.default(scene);
 	            let gravitator = new Gravitator_1.default(scene, ground);
 	            this.gravitator = gravitator;
@@ -26318,14 +26334,19 @@
 	        this.killCount = 0;
 	        this.temporarySnowmanIgnoreList = [];
 	    }
-	    infiniteLoop(callback) {
-	        callback();
-	        setTimeout(function () {
-	            this.infiniteLoop(callback);
-	        }.bind(this), this.timer);
+	    programLoop(callback) {
+	        if (this.running) {
+	            callback();
+	            setTimeout(function () {
+	                this.programLoop(callback);
+	            }.bind(this), this.timer);
+	        }
 	    }
-	    program() {
+	    runProgram() {
+	        this.running = true;
 	        this.timer = 5000;
+	        let blue3 = new BABYLON.Color3(0, 0, 1);
+	        let blue4 = new BABYLON.Color4(0, 0, 1, 1);
 	        let red3 = new BABYLON.Color3(1, 0, 0);
 	        let red4 = new BABYLON.Color4(1, 0, 0, 1);
 	        let white3 = new BABYLON.Color3(1, 1, 1);
@@ -26339,16 +26360,18 @@
 	        this.mouseControl.leftMouseUpAction = function (event) {
 	            mouseUpTime = new Date();
 	            timeDifference = (mouseUpTime - mouseDownTime) / 2;
-	            this.characterSnowballs.push(new Snowball_1.default((snowball) => this.characterSnowballs = this.characterSnowballs.filter(i => i != snowball), this.scene, this.gravitator, this.shadowGenerator, this.character.characterMesh.position, this.pointerParticleSystem.emitter.position, timeDifference / 2 > 300 ? 300 : timeDifference / 2, this.character.physicsBody.linearVelocity, red3, red4, red4));
+	            this.characterSnowballs.push(new Snowball_1.default((snowball) => this.characterSnowballs = this.characterSnowballs.filter(i => i != snowball), this.scene, this.gravitator, this.shadowGenerator, this.character.characterMesh.position, this.pointerParticleSystem.emitter.position, timeDifference / 2 > 300 ? 300 : timeDifference / 2, this.character.physicsBody.linearVelocity, blue3, blue4, blue4));
 	        }.bind(this);
-	        this.infiniteLoop(function () {
-	            if (this.snowmen.length < 100 && this.character.characterHealth > 0) {
+	        this.programLoop(function () {
+	            if (this.snowmen.length < 100) {
 	                let snowman = new Snowman_1.default(this.scene, this.gravitator, this.ground, this.shadowGenerator, this.character.characterMesh.position, this.keyboardControl, function () {
 	                    if (snowman.snowmanMesh.position) {
 	                        this.snowmenSnowballs.push(new Snowball_1.default((snowball) => this.snowmenSnowballs = this.snowmenSnowballs.filter(i => i != snowball), this.scene, this.gravitator, this.shadowGenerator, snowman.snowmanMesh.position, this.character.characterMesh.position, Math.random() * 200));
 	                    }
 	                }.bind(this));
-	                this.snowmen.push(snowman);
+	                setTimeout(function () {
+	                    this.snowmen.push(snowman);
+	                }.bind(this), 1000);
 	            }
 	        }.bind(this));
 	        //Check if snowballs are hitting snowmen
@@ -26357,6 +26380,23 @@
 	            this.snowmenSnowballs.map(this.checkSnowballHitCharacter);
 	            this.snowmen.map(this.checkCharacterCollision);
 	        }.bind(this)));
+	    }
+	    stopProgram() {
+	        this.running = false;
+	        setTimeout(function () {
+	            this.canRestart = true;
+	            this.reloadReact();
+	        }.bind(this), this.timer);
+	        this.scene.actionManager.actions = this.scene.actionManager.actions.filter(i => i != this.programTask);
+	    }
+	    resetProgram() {
+	        let sudoSnowBall = {};
+	        this.snowmen.map(i => i.hits.push(sudoSnowBall));
+	        this.snowmen = [];
+	        this.killCount = 0;
+	        this.character.characterHealth = 3;
+	        this.runProgram();
+	        this.reloadReact();
 	    }
 	    checkSnowman(snowman) {
 	        this.characterSnowballs.map(i => this.checkSnowballHitSnowman(snowman, i.snowballMesh, i));
@@ -26394,7 +26434,7 @@
 	                if (this.temporarySnowmanIgnoreList.findIndex(i => i == snowman) < 0) {
 	                    this.character.characterHealth--;
 	                    if (this.character.characterHealth <= 0) {
-	                        this.scene.actionManager.actions = this.scene.actionManager.actions.filter(i => i != this.programTask);
+	                        this.stopProgram();
 	                    }
 	                    this.reloadReact();
 	                    this.temporarySnowmanIgnoreList.push(snowman);
@@ -27089,7 +27129,6 @@
 	            let physicsBody = characterSphere.setPhysicsState(BABYLON.PhysicsEngine.SphereImpostor, { mass: 100, friction: 100, restitution: .001 });
 	            this.physicsBody = physicsBody;
 	            characterSphere.position = characterMesh.position;
-	            characterSphere.position.x += 50;
 	            camera.target = characterSphere.position;
 	            let animationVerticalShrink = new BABYLON.Animation("shrink", "scaling.y", 60, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
 	            var keys = [];
@@ -27311,8 +27350,8 @@
 	            snowmanSphere.position.y = 400;
 	            snowmanSphere.position.x = target.x + (Math.random() * 1000 + 1000) * this.randomOperator();
 	            snowmanSphere.position.z = target.z + (Math.random() * 1000 + 1000) * this.randomOperator();
-	            snowmanSphere.position.x = snowmanSphere.position.x > 3000 ? 3000 : snowmanSphere.position.x < -3000 ? -3000 : snowmanSphere.position.x;
-	            snowmanSphere.position.z = snowmanSphere.position.z > 3000 ? 3000 : snowmanSphere.position.z < -3000 ? -3000 : snowmanSphere.position.z;
+	            snowmanSphere.position.x = snowmanSphere.position.x > 2950 ? 2950 : snowmanSphere.position.x < -2950 ? -2950 : snowmanSphere.position.x;
+	            snowmanSphere.position.z = snowmanSphere.position.z > 2950 ? 2950 : snowmanSphere.position.z < -2950 ? -2950 : snowmanSphere.position.z;
 	            snowmanAction = scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnEveryFrameTrigger, function () {
 	                multiplier = scene.getAnimationRatio();
 	                if (this.hits.length < 1) {
@@ -27446,7 +27485,29 @@
 
 
 /***/ },
-/* 251 */,
+/* 251 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const React = __webpack_require__(1);
+	class Label extends React.Component {
+	    constructor(props) {
+	        super(props);
+	    }
+	    render() {
+	        return (React.createElement("div", { style: { width: "100%", height: 50 } },
+	            React.createElement("div", { style: { height: 20, margin: 10, borderStyle: "solid", float: "left" } },
+	                "\u00A0",
+	                this.props.box,
+	                "\u00A0"),
+	            React.createElement("div", { style: { float: "left", marginTop: 12 } }, this.props.description)));
+	    }
+	}
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = Label;
+
+
+/***/ },
 /* 252 */
 /***/ function(module, exports, __webpack_require__, __webpack_module_template_argument_0__) {
 
@@ -27562,29 +27623,6 @@
 	
 	module.exports = PooledClass;
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
-
-/***/ },
-/* 253 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	const React = __webpack_require__(1);
-	class Label extends React.Component {
-	    constructor(props) {
-	        super(props);
-	    }
-	    render() {
-	        return (React.createElement("div", { style: { width: "100%", height: 50 } },
-	            React.createElement("div", { style: { height: 20, margin: 10, borderStyle: "solid", float: "left" } },
-	                "\u00A0",
-	                this.props.box,
-	                "\u00A0"),
-	            React.createElement("div", { style: { float: "left", marginTop: 12 } }, this.props.description)));
-	    }
-	}
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = Label;
-
 
 /***/ }
 /******/ ])));
