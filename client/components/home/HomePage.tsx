@@ -80,10 +80,10 @@ class HomePage extends React.Component<{}, State> {
       <div>
         <div style={{position: "absolute", margin: 5, padding: 5, backgroundColor: "white"}}>
           <div>
-            Melt Count: {this.canvas.killCount}
+            Melt Count: {this.canvas && this.canvas.killCount}
           </div>
           <div>
-            Lives: {this.canvas.character.characterHealth}
+            Lives: {this.canvas && this.canvas.character && this.canvas.character.characterHealth}
           </div>
         </div>
         {this.state.showWelcome
