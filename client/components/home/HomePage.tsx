@@ -1,120 +1,103 @@
 import * as React from 'react';
 import * as BABYLON from 'babylonjs';
 import { Link } from 'react-router';
-import Canvas from '../babylonjs/Canvas';
-import Settings from '../settings/Settings';
-import SettingsClass from '../shared/classes/SettingsClass';
-import OnScreenKeyboard from '../shared/OnScreenKeyboard';
+import Canvas from '../../functions/babylonjs/Canvas';
+import Label from './Label';
 
 interface State {
-  showSettings?: boolean;
-  animationRatio?: number;
-  framerate?: number;
-  settings?: SettingsClass;
+  showWelcome?: boolean;
 }
 
 class HomePage extends React.Component<{}, State> {
   constructor(props) {
     super(props);
 
-    this.state ={
-      showSettings: false,
-      animationRatio: 1,
-      settings: new SettingsClass()
+    this.state = {
+      showWelcome: true
     };
 
-    this.keyDown = this.keyDown.bind(this);
-    this.changeSetting = this.changeSetting.bind(this);
+    this.canvas = new Canvas(() => this.setState({}));
+  }
+  canvas: Canvas;
+
+  renderWelcome() {
+    return (
+      <div style={{textAlign: "center", position: "absolute", backgroundColor: "white", opacity: .8, width: "100%", height: "100%"}}>
+        <div style={{width: 500, marginLeft: "auto", marginRight: "auto"}}>
+          <div style={{width: 325, float: "left"}}>
+            <Label box="Left Click" description="Throw fire" />
+            <Label box="Right Click (Hold)" description="Look around" />
+            <Label box="Space" description="Jump" />
+            <Label box="Shift" description="Slide (move faster)" />
+            <Label box="Double press movement key" description="Dodge" />
+            <Label box="Scroll Down" description="Zoom out" />
+            <Label box="Scroll Up" description="Zoom in" />
+          </div>
+          <div style={{width: 175, float: "left"}}>
+            <Label box="W" description="Move forward" />
+            <Label box="A" description="Strafe left" />
+            <Label box="S" description="Strafe right" />
+            <Label box="D" description="Move backward" />
+          </div>
+          <div style={{position: "absolute", top: 350, width: 500}} >
+            <a href="#" onClick={event => {
+              event.preventDefault();
+              this.canvas.runProgram();
+              this.setState({showWelcome: false});
+            }}>Let's Play!</a>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  keyDown(event) {
-    if (event.key == 'Escape') {
-      this.setState({showSettings: !this.state.showSettings});
-    }
-  }
-
-  changeSetting(groupName: string, settingName: string, settingValue: any) {
-    let newGroup = {};
-    let newSetting = {};
-    newSetting[settingName] = settingValue;
-    if (groupName == "keyboard") {
-      if (settingValue == true) {
-        if (settingName == 'q') {
-          newSetting['w'] = true;
-          newSetting['a'] = true;
-          newSetting['s'] = false;
-          newSetting['d'] = false;
+  renderEndGame() {
+    return (
+      <div style={{textAlign: "center", position: "absolute", backgroundColor: "white", opacity: .8, width: "100%", height: "100%"}}>
+        <br />
+        <br />
+        <h1>You're frozen!</h1>
+        <br />
+        <h2>GG</h2>
+        <br />
+        <h2>{this.canvas.killCount} meltings</h2>
+        <br />
+        {this.canvas.canRestart
+          ?
+          <a href="#" onClick={event => {
+            event.preventDefault();
+            this.canvas.resetProgram();
+          }}>Restart</a>
+          :
+          <a>Game Ending...</a>
         }
-        if (settingName == 'e') {
-          newSetting['w'] = true;
-          newSetting['a'] = false;
-          newSetting['s'] = false;
-          newSetting['d'] = true;
-        }
-        if (settingName == 'z') {
-          newSetting['w'] = false;
-          newSetting['a'] = true;
-          newSetting['s'] = true;
-          newSetting['d'] = false;
-        }
-        if (settingName == 'c') {
-          newSetting['w'] = false;
-          newSetting['a'] = false;
-          newSetting['s'] = true;
-          newSetting['d'] = true;
-        }
-        if (settingName == 'w') {
-          newSetting['a'] = false;
-          newSetting['s'] = false;
-          newSetting['d'] = false;
-        }
-          if (settingName == 's') {
-            newSetting['w'] = false;
-            newSetting['a'] = false;
-            newSetting['d'] = false;
-          }
-        if (settingName == 'a') {
-          newSetting['d'] = false;
-          newSetting['w'] = false;
-          newSetting['s'] = false;
-        }
-        if (settingName == 'd') {
-          newSetting['a'] = false;
-          newSetting['w'] = false;
-          newSetting['s'] = false;
-        }
-        if (settingName == "stop") {
-          newSetting['w'] = false;
-          newSetting['a'] = false;
-          newSetting['s'] = false;
-          newSetting['d'] = false;
-        }
-      }
-    }
-    newGroup[groupName] = Object.assign({}, this.state.settings[groupName], newSetting);
-    this.setState({ settings: Object.assign({}, this.state.settings, newGroup)});
+      </div>
+    );
   }
 
   render() {
     return (
-      <div onKeyDown={this.keyDown}>
-        <OnScreenKeyboard settings={this.state.settings}
-          changeSetting={this.changeSetting} />
-        <Settings framerate={this.state.framerate}
-          animationRatio={this.state.animationRatio}
-          settings={this.state.settings}
-          toggleShowSettings={() => this.setState({showSettings: !this.state.showSettings})}
-          changeSetting={this.changeSetting}
-          showSettings={this.state.showSettings} />
-        <Canvas settings={this.state.settings}
-          changeSetting={this.changeSetting}
-          invertMouse={() => this.setState({ settings:
-            Object.assign({}, this.state.settings,
-              {mouse: Object.assign({}, this.state.settings.mouse,
-                {mouseSensitivityX: -this.state.settings.mouse.mouseSensitivityX,
-                  mouseSensitivityY: -this.state.settings.mouse.mouseSensitivityY})})})}
-          setFramerate={(fps: number, animationRatio: number) =>
-            this.setState({framerate: fps, animationRatio: animationRatio }) } />
+      <div>
+        <div style={{position: "absolute", margin: 5, padding: 5, backgroundColor: "white"}}>
+          <div>
+            Melt Count: {this.canvas.killCount}
+          </div>
+          <div>
+            Lives: {this.canvas.character.characterHealth}
+          </div>
+        </div>
+        {this.state.showWelcome
+          ?
+          this.renderWelcome()
+          :
+          null
+        }
+        {this.canvas && this.canvas.character && this.canvas.character.characterHealth <= 0
+          ?
+          this.renderEndGame()
+          :
+          null
+        }
       </div>
     );
   }
